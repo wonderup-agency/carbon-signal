@@ -51,6 +51,8 @@ An array of `{ selector, importFn }` objects. The selector uses `data-component`
 
 Loaded before any components. Runs on every page regardless of data attributes. Use for analytics, global event listeners, shared setup.
 
+It also carries the stylesheet-only imports migrated out of Webflow's head custom code (`styles/base.css`, `styles/pillars.css`, `styles/explore.css`). These sit here rather than on a component because Rollup extracts all CSS into a single `dist/styles.css` at build time — the rules therefore apply on every page regardless of which component JS actually loads. `pillars.css` keys off `data-pillar-state`; the script setting that attribute is still an HTML Embed on the Webflow canvas and has not been migrated.
+
 ### Lifecycle
 
 - **Init**: The default function body (runs once on load, after DOMContentLoaded)

@@ -1,5 +1,6 @@
 import js from '@eslint/js'
 import prettier from 'eslint-config-prettier'
+import globals from 'globals'
 
 export default [
   js.configs.recommended,
@@ -8,11 +9,10 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
-      globals: {
-        document: 'readonly',
-        window: 'readonly',
-        console: 'readonly',
-      },
+      // Full browser global set. The previous hand-rolled list of three
+      // (document/window/console) failed on src/main.js itself, which uses
+      // setTimeout/clearTimeout.
+      globals: globals.browser,
     },
   },
 ]

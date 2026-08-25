@@ -24,6 +24,7 @@
 ## Linting & Formatting
 
 - **ESLint** (v9, flat config) — `eslint.config.js` uses `@eslint/js` recommended + `eslint-config-prettier`
+- **globals** — supplies the full `globals.browser` set to ESLint. Replaces a hand-rolled three-entry list (`document`/`window`/`console`) that failed on `src/main.js`, which uses `setTimeout`/`clearTimeout`
 - **Prettier** — default config (no `.prettierrc` file, uses Prettier defaults)
 - Runs automatically before prod builds via `prebuild` script
 

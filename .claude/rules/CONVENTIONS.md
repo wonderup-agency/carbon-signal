@@ -59,8 +59,19 @@ Components are registered in `src/components.js` as an array of `{ selector, imp
 }
 ```
 
+### Non-`data-component` selectors
+
+A component may register against an existing attribute instead of a new
+`data-component` one when the script coordinates across every matching element
+at once rather than acting on each in isolation. `bg-grid` does this with
+`[data-grid]`: the sections are already marked up for the CSS lattice, and the
+phasing logic is inherently page-wide. Prefer `data-component` by default —
+reach for this only when a dedicated attribute would be redundant markup, and
+document the reason inline in the registry entry.
+
 ## CSS
 
+- Component stylesheets live in `src/components/styles/<name>.css`
 - Import CSS directly in JS files: `import './styles/component.css'`
 - PostCSS handles nesting and autoprefixer (stage 2)
 - All CSS extracts to a single `dist/styles.css`

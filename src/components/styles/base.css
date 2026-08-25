@@ -1,0 +1,7 @@
+/* Site-wide base overrides.
+   Migrated from Webflow → Project Settings → Custom Code → Head. */
+
+/* The Webflow Style Guide component is authoring-only — never rendered live. */
+.styles_component {
+  display: none;
+}

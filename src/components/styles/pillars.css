@@ -1,0 +1,187 @@
+/* POSSIBILITIES PILLARS — accordion
+   Horizontal on desktop, vertical from tablet down. Base layout lives on the
+   Webflow classes; only the open/closed states are here, keyed off
+   data-pillar-state so nothing depends on :has().
+
+   Two titles per panel, not one that rotates: .pillars_panel_rail holds the
+   collapsed view (vertical title + number, aria-hidden) and .pillars_panel_head
+   holds the open view. They cross-fade. A single element switching writing-mode
+   mid-transition cannot be animated — the glyphs just jump. */
+
+/* --- shared ---------------------------------------------------------- */
+
+.pillars_panel_rail,
+.pillars_panel_head,
+.pillars_panel_visual-wrapper,
+.pillars_panel_para {
+  transition: opacity 0.3s ease;
+}
+
+/* the rail's number never carries the dot — the dot marks the open panel */
+.pillars_panel_num-rail .tag_circle-wrapper {
+  display: none;
+}
+
+[data-pillar]:focus-visible {
+  outline: 0.125rem solid var(--system--focus-state);
+  outline-offset: 0.125rem;
+}
+
+/* --- desktop: horizontal accordion ----------------------------------- */
+@media (min-width: 992px) {
+  /* Width animates via flex-grow, not flex-basis: basis transitions fight
+     the shrink factor and stutter, grow interpolates cleanly. */
+  [data-pillar] {
+    transition: flex-grow 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-pillar][data-pillar-state='open'] {
+    flex-grow: 1;
+  }
+  [data-pillar][data-pillar-state='closed'] {
+    flex-grow: 0;
+  }
+
+  /* Contents are locked to the width the panel has when open, published by
+     the script as --pillar-open-w. Without this the copy re-wraps on every
+     frame as the panel resizes, so you watch the text reflow while the box
+     moves. Fixed width means it stays laid out and is simply clipped by the
+     panel's overflow while it fades. */
+  .pillars_panel_head,
+  .pillars_panel_para {
+    width: var(--pillar-open-w, 100%);
+    flex: 0 0 auto;
+  }
+  .pillars_panel_visual-wrapper {
+    width: var(--pillar-open-w, 100%);
+  }
+
+  /* Closed: flow content fades out fast, rail fades in once the panel has
+     most of the way finished shrinking. Open: the reverse, so the wide card
+     is already the right shape before its contents arrive. */
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_head,
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_visual-wrapper,
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_para {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  [data-pillar][data-pillar-state='open'] .pillars_panel_head,
+  [data-pillar][data-pillar-state='open'] .pillars_panel_visual-wrapper,
+  [data-pillar][data-pillar-state='open'] .pillars_panel_para {
+    opacity: 1;
+    transition: opacity 0.35s ease 0.3s;
+  }
+
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_rail {
+    opacity: 1;
+    transition: opacity 0.35s ease 0.3s;
+  }
+  [data-pillar][data-pillar-state='open'] .pillars_panel_rail {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  /* the collapsed title must not push past the number tag at the bottom */
+  .pillars_panel_rail-title {
+    max-height: calc(100% - 3.5rem);
+  }
+}
+
+/* --- tablet and below: vertical accordion ---------------------------- */
+@media (max-width: 991px) {
+  .pillars_layout {
+    flex-direction: column;
+    height: auto;
+  }
+  .pillars_panel {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    padding: 1.5rem;
+    justify-content: flex-start;
+  }
+
+  /* no sideways collapse down here, so the rail is not needed at all */
+  .pillars_panel_rail {
+    display: none;
+  }
+
+  /* The visual is sized by the panel width here, not by a fixed panel height.
+     max-height:100% would resolve against the wrapper, whose height is the
+     thing being animated — so it reads 0 on a closed panel and corrupts the
+     measurement below. Let the image size itself from its own aspect ratio. */
+  .pillars_panel_visual {
+    max-height: none;
+    height: auto;
+    width: 100%;
+  }
+
+  /* Height animates against a measured pixel value set by the script, not a
+     max-height guess. With a guessed ceiling the easing burns most of its
+     duration on empty space, which is why opening felt abrupt while closing
+     looked fine. --pillar-h is the element's own scrollHeight. */
+  .pillars_panel_visual-wrapper,
+  .pillars_panel_para {
+    max-height: var(--pillar-h, 60rem);
+    overflow: hidden;
+    transition:
+      max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.3s ease 0.1s;
+  }
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_visual-wrapper,
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_para {
+    max-height: 0;
+    opacity: 0;
+    transition:
+      max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.2s ease;
+  }
+
+  /* All the breathing room around the visual is its own padding, never a gap
+     or a margin on the panel. max-height:0 clips padding but not margin and
+     not flex gap, so anything outside the box would still take up space on a
+     collapsed panel and leave it taller than an open one at the bottom. */
+  .pillars_panel_visual-wrapper {
+    flex: 0 0 auto;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  .pillars_panel_para {
+    margin: 0;
+  }
+
+  /* the dot collapses its own width and the tag's gap rather than being
+     switched off, so it moves with everything else */
+  .pillars_panel_num {
+    transition: column-gap 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .pillars_panel_num .tag_circle-wrapper {
+    overflow: hidden;
+    transition:
+      width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.3s ease,
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  [data-pillar][data-pillar-state='closed'] .pillars_panel_num {
+    column-gap: 0;
+  }
+  [data-pillar][data-pillar-state='closed']
+    .pillars_panel_num
+    .tag_circle-wrapper {
+    width: 0;
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pillars_panel_rail,
+  .pillars_panel_head,
+  .pillars_panel_visual-wrapper,
+  .pillars_panel_para,
+  .pillars_panel_num,
+  .pillars_panel_num .tag_circle-wrapper,
+  [data-pillar] {
+    transition: none !important;
+  }
+}

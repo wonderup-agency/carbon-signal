@@ -6,7 +6,14 @@
 │   ├── components.js              Component registry (auto-managed by create-component)
 │   ├── config.js                  Shared project config (API keys, endpoints, flags)
 │   ├── components/
-│   │   └── global.js              Runs on every page before components load
+│   │   ├── global.js              Runs on every page before components load
+│   │   ├── bg-grid.js             Background grid phasing, snapping, deformation
+│   │   ├── nav.js                 Nav scroll-state flag
+│   │   └── styles/                Component stylesheets (imported from JS)
+│   │       ├── base.css           Site-wide base overrides
+│   │       ├── explore.css        Explore-cards layout and dividers
+│   │       ├── nav.css            Nav scrolled-state rules
+│   │       └── pillars.css        Possibilities-pillars accordion states
 │   └── pages/
 │       └── .gitkeep               Per-page standalone bundles go here
 │
@@ -62,6 +69,7 @@
 | Project config         | `src/config.js`                                               |
 | CSS                    | Import in any JS file — extracts to `dist/styles.css`         |
 | Node scripts           | `scripts/`                                                    |
+| Component stylesheets  | `src/components/styles/<name>.css` (import from the JS)        |
 | Component docs         | `.claude/rules/components/<name>.md`                          |
 | Page docs              | `.claude/rules/pages/<name>.md`                               |
 | Architecture docs      | `.claude/rules/`                                              |
