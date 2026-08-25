@@ -20,14 +20,24 @@ that configures a slider also loads it — same reasoning as `bg-grid` and
 ### Structure
 
 ```
-[data-slider]                 root
-  [data-slider-track]         direct parent of the slides
-    [data-slider-slide]       one per slide (direct children of the track)
-  [data-slider-prev]          optional
+[data-slider]                 root — config lives here
+  [data-slider-prev]          optional, anywhere inside the root
   [data-slider-next]          optional
+  [data-slider-viewport]      optional; the clipping/drag area
+    [data-slider-track]       direct parent of the slides
+      [data-slider-slide]     one per slide (direct children of the track)
 ```
 
-The arrows do not have to be inside the root's slide area, only inside the root.
+**`[data-slider-viewport]` is what you want whenever the arrows or a label sit
+outside the scrolling strip** (as in the About page design). Swiper measures its
+own root and treats it as the drag surface, so that root must wrap the track and
+nothing else — put a header row inside it and dragging the header scrolls the
+track. The viewport gives the arrows somewhere to live inside `[data-slider]`
+without being inside the swipe area.
+
+Omit it and the root becomes the viewport, which is fine for a bare slider.
+`slider.css` handles both shapes: the root only clips when there is no inner
+viewport.
 
 ### Config attributes
 

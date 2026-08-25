@@ -48,6 +48,14 @@ function initSlider(root) {
   const track = root.querySelector('[data-slider-track]')
   if (!track) return null
 
+  /* Swiper measures its own root and treats it as the drag surface, so that
+     root must wrap the track and nothing else. The design puts the label and
+     arrows above the scrolling area, so they need to live outside it while
+     still being inside [data-slider] — hence an optional inner viewport.
+     Without one, the root itself is the viewport. */
+  const viewport = root.querySelector('[data-slider-viewport]') || root
+  if (!viewport.contains(track)) return null
+
   /* Only direct slides of this track — a nested slider must not have its
      slides claimed by the outer one. */
   const slides = Array.from(track.children).filter((el) =>
@@ -55,7 +63,7 @@ function initSlider(root) {
   )
   if (slides.length < 2) return null
 
-  root.classList.add('swiper')
+  viewport.classList.add('swiper')
   track.classList.add('swiper-wrapper')
   slides.forEach((slide) => slide.classList.add('swiper-slide'))
 
@@ -71,7 +79,7 @@ function initSlider(root) {
   const prevEl = root.querySelector('[data-slider-prev]')
   const nextEl = root.querySelector('[data-slider-next]')
 
-  const swiper = new Swiper(root, {
+  const swiper = new Swiper(viewport, {
     modules: [Navigation, A11y, Keyboard],
 
     /* Widths come from CSS, not from a slide count — that is what lets the

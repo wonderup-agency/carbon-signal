@@ -15,12 +15,21 @@
      --slide-w-active  active (leftmost) slide width
      --slider-ease     shared easing for the width + translate transition */
 
-[data-slider] {
+/* The scrolling area. Falls back to the root when no inner viewport is used —
+   both selectors so either shape clips correctly. */
+[data-slider],
+[data-slider-viewport] {
   overflow: hidden;
 }
 
+/* When there IS an inner viewport, the root is just a layout wrapper and must
+   not clip the arrows or label sitting above it. */
+[data-slider]:has([data-slider-viewport]) {
+  overflow: visible;
+}
+
 [data-slider] [data-slider-slide] {
-  width: var(--slide-w, 11rem);
+  width: var(--slide-w, 22rem);
   height: auto;
   flex: 0 0 auto;
   transition: width var(--slider-speed, 600ms)
@@ -30,7 +39,7 @@
 /* Swiper aligns the active slide to the container start, so the active slide is
    always the leftmost one — no extra positioning needed here. */
 [data-slider] [data-slider-slide].swiper-slide-active {
-  width: var(--slide-w-active, 22rem);
+  width: var(--slide-w-active, 27.5rem);
 }
 
 /* Arrows: Swiper writes these two classes onto whatever elements are wired as
