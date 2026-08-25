@@ -63,6 +63,16 @@ Set these custom properties on the root in Webflow — per slider, per breakpoin
 it by hand, or the width transition and Swiper's translate will drift apart and
 the row tears mid-transition.
 
+`--slider-ease` has to govern **both** the slide width and Swiper's transform, or
+the same tearing happens for the easing rather than the duration. `slider.css`
+therefore feeds it into `--swiper-wrapper-transition-timing-function`, which is
+Swiper's own hook for the wrapper's curve — `swiper/css` only mentions that
+variable inside a comment, so left alone it falls back to `ease`. The mismatch is
+invisible going backwards and obvious going forwards: the arriving slide's left
+edge is the outgoing slide's shrinking width *plus* the translate, so with two
+different curves it drifts out of the viewport mid-transition and gets clipped,
+while backwards that edge is the translate alone.
+
 `--slide-w` and `--slide-w-active` are also **read by the JS**, which is why they
 are the contract rather than a convenience. Both the end-offset and the
 retargeted translate (below) are computed from them, and neither can be measured

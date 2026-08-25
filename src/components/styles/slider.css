@@ -15,6 +15,23 @@
      --slide-w-active  active (leftmost) slide width
      --slider-ease     shared easing for the width + translate transition */
 
+/* Swiper animates the wrapper's transform on its own timing function, and that
+   defaults to `ease` — swiper/css only mentions the variable inside a comment,
+   so nothing declares it. The slide width below eases on --slider-ease. Same
+   duration, different curves, and the mismatch is only visible going forward:
+   the arriving slide's left edge is the outgoing slide's shrinking width plus
+   the translate, so it is the difference of two differently-eased quantities
+   and drifts left of the viewport mid-transition, where the overflow clips it.
+   Going backwards that edge is the translate alone — one curve — which is why
+   only one direction looked broken. Binding Swiper's curve to the same token
+   keeps the active slide's left edge pinned for the whole transition. */
+[data-slider] {
+  --swiper-wrapper-transition-timing-function: var(
+    --slider-ease,
+    cubic-bezier(0.22, 1, 0.36, 1)
+  );
+}
+
 /* The scrolling area. Falls back to the root when no inner viewport is used —
    both selectors so either shape clips correctly. */
 [data-slider],
