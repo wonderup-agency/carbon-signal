@@ -18,11 +18,26 @@ CSS contract with ./styles/slider.css. The custom properties are the single
 source of truth for the geometry — this module derives Swiper's whole snap grid
 from them rather than letting Swiper measure it:
 
-  --slide-w         read     collapsed slide width
-  --slide-w-active  read     active (leftmost) slide width
+  --slide-w         read     slide width
+  --slide-w-active  read     active (leftmost) width — and the opt-in, see below
   --slider-ease     read     shared easing — by the stylesheet only, never here
   --slider-speed    written  from data-slider-speed, so the width transition
                              and Swiper's translate share one duration
+
+Two kinds of slider, and --slide-w-active is the switch
+-------------------------------------------------------
+--slide-w sizes the slides. Declaring --slide-w-active as well, with a different
+value, additionally opts that slider into the widening-active-card behaviour —
+the derived grid and the activeIndex-driven arrows described below.
+
+Leave --slide-w-active off and the slider is an ordinary equal-width one: Swiper
+measures its own grid and runs its own isBeginning/isEnd bookkeeping, with none
+of this machinery in the way. That default matters, because the machinery would
+actively break an equal-width slider — it would build a grid around an active
+width the slides never take. The property is read without a fallback for exactly
+that reason, so "absent" stays distinguishable from "set to the default".
+
+Everything from here down applies only to the variable-width case.
 
 Why the grid is defined and not measured
 ----------------------------------------
@@ -119,6 +134,19 @@ function lengthOf(root, name, remFallback) {
   return remFallback * rootFontSize()
 }
 
+/* Same conversion, but reports an undeclared property as null instead of
+   substituting a fallback. Whether --slide-w-active exists is what decides if a
+   slider is variable-width at all, so absence has to stay distinguishable from
+   a value. */
+function declaredLengthOf(root, name) {
+  const raw = getComputedStyle(root).getPropertyValue(name).trim()
+  const value = parseFloat(raw)
+  if (!raw || !Number.isFinite(value)) return null
+  if (raw.endsWith('rem')) return value * rootFontSize()
+  if (raw.endsWith('px')) return value
+  return null
+}
+
 /* Wires one slider and returns its Swiper instance, or null if the markup is
    incomplete or there is nothing to slide. */
 function initSlider(root) {
@@ -158,6 +186,16 @@ function initSlider(root) {
     active: lengthOf(root, '--slide-w-active', fallbackRem.active),
   })
 
+  /* --slide-w-active is the opt-in for the widening-active-card pattern, so it
+     is read without a fallback: a slider that never declares it is an ordinary
+     equal-width slider and must get none of the machinery below. Substituting
+     the fallback here would build a grid around an active width the slider does
+     not actually have, breaking a slider that was working fine. */
+  const declaredActive = declaredLengthOf(root, '--slide-w-active')
+  const variableWidth =
+    declaredActive !== null &&
+    declaredActive !== lengthOf(root, '--slide-w', fallbackRem.collapsed)
+
   /* Replaces Swiper's measured grid with the one the tokens imply — see the
      header for why measuring cannot work here. Every slide but the active one
      is collapsed, so each position is a whole number of collapsed steps. */
@@ -189,7 +227,7 @@ function initSlider(root) {
      derived from which card is active instead. Looping keeps every slide
      reachable, so neither arrow is ever disabled there. */
   function syncArrows(instance) {
-    if (loop) return
+    if (!variableWidth || loop) return
     const last = instance.slides.length - 1
     if (prevEl) {
       prevEl.classList.toggle('is-disabled', instance.activeIndex === 0)
@@ -210,15 +248,18 @@ function initSlider(root) {
     loop,
     watchSlidesProgress: true,
 
-    /* Still wired, so Swiper handles the clicks — but disabledClass is left at
-       its default, which nothing styles. is-disabled is applied by syncArrows
-       instead; letting both write it means whichever fires last wins. */
     navigation:
       prevEl && nextEl
         ? {
             prevEl,
             nextEl,
             lockClass: 'is-locked',
+            /* Variable-width owns is-disabled from activeIndex, so Swiper is
+               left writing its unstyled default — letting both write the styled
+               class means whichever event fires last wins. Equal-width has no
+               such conflict and no override, so Swiper's own isBeginning/isEnd
+               bookkeeping drives the styled class as it normally would. */
+            ...(variableWidth ? {} : { disabledClass: 'is-disabled' }),
           }
         : false,
 
@@ -231,7 +272,10 @@ function initSlider(root) {
          after init, after every resize and after every update() — everywhere
          the measurement would otherwise take hold. */
       slidesUpdated(instance) {
-        defineGrid(instance)
+        /* Equal-width sliders keep Swiper's measured grid, which is correct for
+           them — the override only exists because a widening active slide makes
+           the measurement stale. */
+        if (variableWidth) defineGrid(instance)
       },
 
       /* activeIndexChange rather than slideChange: slideChange reports

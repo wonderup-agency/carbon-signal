@@ -55,9 +55,28 @@ Set these custom properties on the root in Webflow — per slider, per breakpoin
 
 | Property           | Default                       | Meaning                |
 | ------------------ | ----------------------------- | ---------------------- |
-| `--slide-w`        | `22rem` (352px)               | Collapsed slide width  |
-| `--slide-w-active` | `27.5rem` (440px)             | Active (leftmost) width|
+| `--slide-w`        | `22rem` (352px)               | Slide width            |
+| `--slide-w-active` | `27.5rem` (440px)             | Active (leftmost) width — **and the opt-in** |
 | `--slider-ease`    | `cubic-bezier(0.22,1,0.36,1)` | Shared easing          |
+
+### Two kinds of slider
+
+`--slide-w` sizes the slides. Declaring `--slide-w-active` **as well, with a
+different value**, additionally opts that slider into the widening-active-card
+behaviour — the derived grid and the `activeIndex`-driven arrows below.
+
+Leave `--slide-w-active` off and you get an ordinary equal-width slider: Swiper
+measures its own grid and does its own `isBeginning`/`isEnd` bookkeeping, with
+none of this component's machinery involved. That default is deliberate, because
+the machinery would *break* an equal-width slider — it would build a grid around
+an active width the slides never take.
+
+The property is therefore read **without** the fallback the table lists, so
+"absent" stays distinguishable from "set to the default". Comparison is on the
+resolved length, so `--slide-w: 22rem` with `--slide-w-active: 352px` counts as
+equal-width, not variable.
+
+Everything in the two sections below applies only to the variable-width case.
 
 `--slider-speed` is **written by the JS** from `data-slider-speed` — do not set
 it by hand, or the width transition and Swiper's translate will drift apart and
@@ -167,10 +186,16 @@ A root matching `[data-slider]` containing one `[data-slider-track]` whose direc
 children are `[data-slider-slide]`. Nested sliders are safe — only direct
 children of a track are claimed by that track.
 
-`is-disabled` is written onto the arrows **by this component**, from
-`activeIndex` — `prev` at index 0, `next` at the last index, neither when `loop`
-is on. `is-locked` is still Swiper's (renamed from its default so it reads as a
-Webflow class), though with a derived grid it never fires.
+On a **variable-width** slider, `is-disabled` is written onto the arrows **by
+this component**, from `activeIndex` — `prev` at index 0, `next` at the last
+index, neither when `loop` is on. Swiper's own `disabledClass` is left at its
+unstyled library default there, so the two cannot fight.
+
+On an **equal-width** slider it is the reverse: Swiper's `disabledClass` is set to
+`is-disabled` and its own bookkeeping drives it, exactly as stock.
+
+`is-locked` is Swiper's in both cases (renamed from its default so it reads as a
+Webflow class), though a derived grid means it never fires.
 
 ### Why the arrows are not Swiper's job
 
