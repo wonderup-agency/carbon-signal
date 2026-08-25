@@ -9,6 +9,7 @@
 │   │   ├── global.js              Runs on every page before components load
 │   │   ├── bg-grid.js             Background grid phasing, snapping, deformation
 │   │   ├── nav.js                 Nav scroll-state flag
+│   │   ├── pillars.js             Possibilities-pillars accordion
 │   │   └── styles/                Component stylesheets (imported from JS)
 │   │       ├── base.css           Site-wide base overrides
 │   │       ├── explore.css        Explore-cards layout and dividers

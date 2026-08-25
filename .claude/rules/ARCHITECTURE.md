@@ -51,7 +51,9 @@ An array of `{ selector, importFn }` objects. The selector uses `data-component`
 
 Loaded before any components. Runs on every page regardless of data attributes. Use for analytics, global event listeners, shared setup.
 
-It also carries the stylesheet-only imports migrated out of Webflow's head custom code (`styles/base.css`, `styles/pillars.css`, `styles/explore.css`). These sit here rather than on a component because Rollup extracts all CSS into a single `dist/styles.css` at build time — the rules therefore apply on every page regardless of which component JS actually loads. `pillars.css` keys off `data-pillar-state`; the script setting that attribute is still an HTML Embed on the Webflow canvas and has not been migrated.
+It also carries the stylesheet-only imports migrated out of Webflow's head custom code (`styles/base.css`, `styles/explore.css`). These sit here because no single component owns them — Rollup extracts all CSS into a single `dist/styles.css` at build time, so the rules apply on every page regardless of which component JS actually loads.
+
+`pillars.css` used to live here too. It now belongs to the `pillars` component, which imports it directly — the accordion script it pairs with has been migrated out of its canvas embed, so the stylesheet has a clear owner. The CSS still lands in the same `dist/styles.css`; which chunk imports it makes no difference to the output.
 
 ### Lifecycle
 

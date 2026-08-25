@@ -24,4 +24,10 @@ export default [
     selector: '[data-grid]',
     importFn: () => import('./components/bg-grid.js'),
   },
+  // Same reasoning as bg-grid: the accordion groups already mark themselves
+  // with data-pillars, so that attribute is the selector.
+  {
+    selector: '[data-pillars]',
+    importFn: () => import('./components/pillars.js'),
+  },
 ]
