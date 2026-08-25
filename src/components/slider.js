@@ -15,15 +15,39 @@ classes, they are applied here at init — Webflow markup stays semantic and
 Swiper's own stylesheet still matches.
 
 CSS contract with ./styles/slider.css. The custom properties are the single
-source of truth for the geometry, and this module reads them rather than
-measuring the slides, because while the active card is widening a measured width
-is a frame-by-frame interpolation:
+source of truth for the geometry — this module derives Swiper's whole snap grid
+from them rather than letting Swiper measure it:
 
   --slide-w         read     collapsed slide width
   --slide-w-active  read     active (leftmost) slide width
   --slider-ease     read     shared easing — by the stylesheet only, never here
   --slider-speed    written  from data-slider-speed, so the width transition
                              and Swiper's translate share one duration
+
+Why the grid is defined and not measured
+----------------------------------------
+Swiper measures the slides once, with whichever one happened to be active at the
+time, so the step from the active slide to its neighbour gets recorded as the
+ACTIVE width. Collapse that slide on the next move and the step is stale. Live,
+at activeIndex 2, sizes of [278.625, 278.625, 348.288, 278.625, 278.625] produced
+a snapGrid of [0, 278.625, 557.25, 905.538, 1114.71] — but slide 3 actually sits
+at 3 * 278.625 = 835.875. The 69.663px error is exactly 348.288 - 278.625, the
+active-width delta, so Swiper translated too far and clipped the left of the
+incoming card. Entries *below* the active index were measured from collapsed
+slides and are correct, which is why only forward moves misbehaved.
+
+Correcting the translate afterwards cannot fix that, because the same grid is
+wrong for every subsequent move too. And a measured width is the wrong input
+either way: mid-transition it is a frame-by-frame interpolation, and once the
+transition ends it still reflects whichever slide was active when the
+measurement ran.
+
+Every slide except the active one is collapsed, so the geometry is fully
+determined by the two tokens and can simply be written down. Two things follow
+from doing that: maxTranslate becomes -((n - 1) * (collapsed + gap)), i.e. the
+last slide resting at the left edge — which is what a trailing offset was
+previously approximating — and snapGrid always holds more than one entry, so
+Swiper stops reporting isLocked and slider.css stops hiding the arrows.
 */
 
 import Swiper from 'swiper'
@@ -59,6 +83,8 @@ function bool(root, name, fallback) {
   return raw !== 'false'
 }
 
+/* Resolved per call rather than cached: the site's root font size is fluid, so
+   a rem token is worth a different number of pixels at different viewports. */
 function rootFontSize() {
   return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
 }
@@ -114,24 +140,28 @@ function initSlider(root) {
     active: lengthOf(root, '--slide-w-active', fallbackRem.active),
   })
 
-  /* Swiper clamps the translate so the last slide finishes flush with the right
-     edge. Under slidesPerView:'auto' that leaves the final cards unable to reach
-     the left edge — and because the leftmost slide is the active one, they could
-     never go active at all. The symptom was the track barely moving on the first
-     arrow click and the arrows picking up is-locked, Swiper having concluded
-     there was almost nothing left to scroll. Trailing space the size of the
-     leftover viewport gives the last card somewhere to travel to. It derives
-     from the active width, so it has to be recomputed whenever that moves.
-     Looping makes every slide reachable on its own, so it is skipped there.
+  /* Replaces Swiper's measured grid with the one the tokens imply — see the
+     header for why measuring cannot work here. Every slide but the active one
+     is collapsed, so each position is a whole number of collapsed steps. */
+  function defineGrid(instance) {
+    const { collapsed, active } = widths()
+    const step = collapsed + gap
+    const count = instance.slides.length
+    const sizes = []
+    const positions = []
 
-     Returns whether the value changed, leaving the caller to decide when an
-     update() is safe. */
-  function syncEndOffset(instance) {
-    if (loop) return false
-    const offset = Math.max(0, instance.width - widths().active)
-    if (instance.params.slidesOffsetAfter === offset) return false
-    instance.params.slidesOffsetAfter = offset
-    return true
+    for (let i = 0; i < count; i++) {
+      sizes.push(i === instance.activeIndex ? active : collapsed)
+      positions.push(i * step)
+    }
+
+    instance.slidesSizesGrid = sizes
+    instance.slidesGrid = positions
+    /* A separate array: Swiper mutates the two independently. */
+    instance.snapGrid = positions.slice()
+    /* Only the last slide sits beyond the final step, and it is the one that
+       can still widen — hence active rather than collapsed here. */
+    instance.virtualSize = (count - 1) * step + active
   }
 
   const prevEl = root.querySelector('[data-slider-prev]')
@@ -163,36 +193,18 @@ function initSlider(root) {
     a11y: { enabled: true },
 
     on: {
+      /* Swiper emits this at the end of updateSlides, so the derived grid lands
+         after init, after every resize and after every update() — everywhere
+         the measurement would otherwise take hold. */
+      slidesUpdated(instance) {
+        defineGrid(instance)
+      },
+
       afterInit(instance) {
-        if (syncEndOffset(instance)) instance.update()
+        instance.update()
       },
 
       resize(instance) {
-        if (syncEndOffset(instance)) instance.update()
-      },
-
-      /* Swiper built its snap grid from the widths that were in play before the
-         active class moved, so the offset it is animating towards is the stale
-         one — the wrong value is the destination, not the origin. Retarget it to
-         what the tokens say it should be: every slide to the left of the active
-         one is collapsed, so the translate is that many collapsed widths, plus
-         the gaps between them. translateBounds is off because the stale grid's
-         bounds are wrong for the same reason. */
-      slideChangeTransitionStart(instance) {
-        const { collapsed } = widths()
-        instance.translateTo(
-          -(instance.activeIndex * (collapsed + gap)),
-          speed,
-          false,
-          false
-        )
-      },
-
-      /* Widths have settled, so the grid can be rebuilt from real numbers. The
-         translate already equals what update() derives, so this resyncs without
-         moving anything. */
-      slideChangeTransitionEnd(instance) {
-        syncEndOffset(instance)
         instance.update()
       },
     },
@@ -201,10 +213,7 @@ function initSlider(root) {
   /* Webfonts landing after init change how the copy wraps, which changes slide
      heights. Swiper's own observer catches resizes but not this. */
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(() => {
-      syncEndOffset(swiper)
-      swiper.update()
-    })
+    document.fonts.ready.then(() => swiper.update())
   }
 
   return swiper

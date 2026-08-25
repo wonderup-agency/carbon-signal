@@ -89,32 +89,50 @@ are duplicated as `fallbackRem` in `slider.js`; change one, change both.
   with the Navigation, A11y and Keyboard modules. Skipped if the track is
   missing or there are fewer than two slides.
 
-### Two things the variable width forces
+### The snap grid is defined, not measured
 
-Both exist because Swiper assumes slides keep the width it measured, which is
-exactly what this component breaks. Neither is optional.
+Swiper assumes slides keep the width it measured, which is exactly what this
+component breaks — so the grid is written from the tokens instead of being
+measured. This is the one non-optional mechanism; everything else follows from it.
 
-- **Trailing offset so the last slides can go active.** Swiper clamps the
-  translate at "last slide flush right", so under `slidesPerView: 'auto'` the
-  final cards can never reach the left edge — and since active *is* leftmost,
-  they could never activate. `params.slidesOffsetAfter` is set to
-  `viewport width − active slide width`, recomputed on init, on resize, after
-  every slide change, and on `document.fonts.ready`, because the value moves with
-  the active card. Skipped entirely when `loop` is on, which already makes every
-  slide reachable. Without it the track barely moves on the first arrow click and
-  the arrows pick up `is-locked` — `slider.css` hides those with `display: none`,
-  so the controls vanish.
-- **Retargeting the translate so the row does not jump.** Swiper caches slide
-  widths when it builds its snap grid, so the instant the active class moves, the
-  offset it is animating *towards* was derived from the pre-change widths — the
-  stale value is the destination, not the origin. On
-  `slideChangeTransitionStart` the translate is retargeted to
-  `−(activeIndex × (collapsed + gap))`: every slide left of the active one is
-  collapsed, so that is the correct offset by construction. `translateBounds` is
-  passed as `false` because the stale grid's bounds are wrong for the same
-  reason. `update()` still runs on `slideChangeTransitionEnd` to resync the grid
-  once widths have settled — by then the translate already equals what it
-  computes, so nothing moves.
+Swiper measures the slides once, with whichever one happened to be active at the
+time, so the step from the active slide to its neighbour gets recorded as the
+*active* width. Collapse that slide on the next move and the step is stale.
+Observed live at `activeIndex` 2:
+
+```
+sizes:    [278.625, 278.625, 348.288, 278.625, 278.625]
+snapGrid: [0, 278.625, 557.25, 905.538, 1114.71]
+```
+
+Slide 3 actually sits at `3 × 278.625 = 835.875`, but the grid says `905.538` —
+out by `348.288 − 278.625 = 69.663`, exactly the active-width delta. Swiper
+translated ~70px too far and clipped the left of the incoming card. Entries
+*below* the active index were measured from collapsed slides and are correct,
+which is why only forward moves misbehaved.
+
+Correcting the translate after the fact cannot fix this, because the same grid is
+wrong for every subsequent move. Every slide but the active one is collapsed, so
+the geometry is fully determined:
+
+```
+slidesSizesGrid[i] = i === activeIndex ? activeWidth : collapsedWidth
+slidesGrid[i]      = i * (collapsedWidth + gap)
+snapGrid[i]        = i * (collapsedWidth + gap)
+virtualSize        = (n - 1) * (collapsedWidth + gap) + activeWidth
+```
+
+Applied on `slidesUpdated`, which Swiper emits at the end of `updateSlides`, so
+it holds after init, after resize, and after every `update()`.
+
+Two consequences:
+
+- `maxTranslate()` returns `-snapGrid[snapGrid.length - 1]`, so it becomes
+  `−((n − 1) × (collapsed + gap))` — the last slide resting at the left edge,
+  which is what a trailing `slidesOffsetAfter` was previously approximating.
+- `snapGrid.length` is always greater than one, so `checkOverflow` never sets
+  `isLocked`, and the arrows stop being hidden by `slider.css`'s
+  `.is-locked { display: none }`.
 - **Resize**: Not used. Swiper runs its own `ResizeObserver`, so wiring the
   debounced window `resize` hook would only duplicate work. Also re-measures on
   `document.fonts.ready`, which Swiper's observer does not catch.
