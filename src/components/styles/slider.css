@@ -28,7 +28,20 @@
   overflow: visible;
 }
 
+/* This rule doubles as the reset for swiper/css, which declares
+   .swiper-slide { display: block; width: 100%; height: 100% } — and since
+   dist/styles.css is appended to <head> at runtime, it lands after Webflow's
+   stylesheet, so those three would outrank any Webflow class on the card.
+
+   The override rides on specificity, not source order, and deliberately so:
+   rollup-plugin-postcss emits this file's rules in a non-deterministic order
+   relative to swiper/css, so a same-specificity reset wins or loses at random
+   between builds. Two selectors (0,2,0) beats .swiper-slide (0,1,0) every time.
+
+   display is reverted rather than set, so the card's own box type survives;
+   width and height are claimed outright because the mechanism depends on them. */
 [data-slider] [data-slider-slide] {
+  display: revert;
   width: var(--slide-w, 22rem);
   height: auto;
   flex: 0 0 auto;
