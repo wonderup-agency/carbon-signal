@@ -30,4 +30,12 @@ export default [
     selector: '[data-pillars]',
     importFn: () => import('./components/pillars.js'),
   },
+  // Every slider on the site, configured from data attributes. Registered on
+  // data-slider rather than a data-component value so the same markup that
+  // configures it also triggers it. Carries Swiper, so this chunk is the
+  // heaviest — it only loads on pages that actually have a slider.
+  {
+    selector: '[data-slider]',
+    importFn: () => import('./components/slider.js'),
+  },
 ]

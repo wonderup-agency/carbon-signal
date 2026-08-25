@@ -10,8 +10,10 @@
 │   │   ├── bg-grid.js             Background grid phasing, snapping, deformation
 │   │   ├── nav.js                 Nav scroll-state flag
 │   │   ├── pillars.js             Possibilities-pillars accordion
+│   │   ├── slider.js              All sliders (Swiper), attribute-configured
 │   │   └── styles/                Bundled stylesheets (imported from JS)
-│   │       └── base.css           Hides the authoring-only Style Guide component
+│   │       ├── base.css           Hides the authoring-only Style Guide component
+│   │       └── slider.css         Variable-width slide mechanism (versions with slider.js)
 │   │                              (all other CSS lives in Global / Styles embeds
 │   │                               in Webflow — see CONVENTIONS.md)
 │   └── pages/

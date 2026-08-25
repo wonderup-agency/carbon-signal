@@ -50,5 +50,8 @@
     "rollup": "^4.47.1",
     "rollup-plugin-delete": "^3.0.1",
     "rollup-plugin-postcss": "^4.0.2"
+  },
+  "dependencies": {
+    "swiper": "^14.1.0"
   }
 }

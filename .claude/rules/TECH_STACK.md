@@ -43,8 +43,18 @@
 
 - **Cloudflare Tunnel** (`cloudflared`) — exposes local server for testing on real devices/Webflow preview
 
+## Sliders
+
+- **Swiper** (v14) — powers every slider via the `slider` component. Imported as
+  ES modules (core + Navigation, A11y, Keyboard) so Rollup tree-shakes the rest,
+  and code-split into its own chunk that loads only on pages with a
+  `[data-slider]`. Chosen over a hand-rolled slider for touch/drag, a11y and
+  keyboard handling. Swiper's Navigation *CSS* is intentionally not imported —
+  the arrows are Webflow elements.
+
 ## Dependencies
 
-- **Runtime**: `picocolors` (used by scripts only, not bundled to browser)
+- **Runtime**: `swiper` (bundled to the browser), `picocolors` (used by scripts
+  only, not bundled to browser)
 - **Dev**: All other deps are devDependencies (Rollup, ESLint, Prettier, etc.)
 - No frontend framework — vanilla JavaScript only

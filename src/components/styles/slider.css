@@ -1,0 +1,53 @@
+/* SLIDER — variable-width slides, active slide on the left.
+
+   Mechanism only, and deliberately in the bundle rather than a Webflow embed:
+   slider.js depends on these rules to work at all. Swiper runs with
+   slidesPerView:'auto', so the widths below ARE the layout, and --slider-speed
+   is published by the JS so the width transition and Swiper's translate share
+   one duration. That is the "must version with its JS" case in CONVENTIONS.md.
+
+   Appearance — card design, photo treatment, typography — is not here. That
+   belongs on the Webflow classes, or in a Global / Styles embed.
+
+   Every dimension is a custom property so each slider can be sized from
+   Webflow without touching this file:
+     --slide-w         collapsed slide width
+     --slide-w-active  active (leftmost) slide width
+     --slider-ease     shared easing for the width + translate transition */
+
+[data-slider] {
+  overflow: hidden;
+}
+
+[data-slider] [data-slider-slide] {
+  width: var(--slide-w, 11rem);
+  height: auto;
+  flex: 0 0 auto;
+  transition: width var(--slider-speed, 600ms)
+    var(--slider-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+/* Swiper aligns the active slide to the container start, so the active slide is
+   always the leftmost one — no extra positioning needed here. */
+[data-slider] [data-slider-slide].swiper-slide-active {
+  width: var(--slide-w-active, 22rem);
+}
+
+/* Arrows: Swiper writes these two classes onto whatever elements are wired as
+   navigation. Both are named for Webflow rather than using Swiper's defaults. */
+[data-slider-prev].is-disabled,
+[data-slider-next].is-disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+[data-slider-prev].is-locked,
+[data-slider-next].is-locked {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slider] [data-slider-slide] {
+    transition: none;
+  }
+}
