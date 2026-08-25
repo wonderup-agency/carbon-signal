@@ -9,9 +9,11 @@ Migrated from a script-only HTML Embed inside the Section / Possibilities
 Pillars component. The embed's window.__csPillarsInit guard is gone: it existed
 because two component instances meant two copies of the script tag, and the
 bundle only ever evaluates this module once.
-*/
 
-import './styles/pillars.css'
+No stylesheet import: the pillars CSS lives in the "Pillars CSS" embed in the
+Global / Styles component on the Webflow canvas, so the open/closed states
+render in the Designer — bundled CSS never does. Same split as bg-grid.
+*/
 
 const hoverDelay = 90 // ms — see pointerenter below
 const stacked = '(max-width: 991px)'

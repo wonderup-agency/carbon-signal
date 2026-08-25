@@ -39,8 +39,17 @@ Related attributes:
 
 ## Dependencies
 
-`./styles/pillars.css` — the open/closed state rules, keyed off
-`data-pillar-state` so nothing depends on `:has()`.
+None in the bundle. The open/closed state rules — keyed off `data-pillar-state`
+so nothing depends on `:has()` — live in the **"Pillars CSS" embed** inside the
+`Global / Styles` component on the Webflow canvas
+(element `b14023a6-4266-7c63-ad50-b4cfd88d57bd`), not in
+`src/components/styles/`.
+
+They sit there so the states render on the Designer canvas; CSS that ships in
+`dist/styles.css` never does. `bg-grid` splits the same way. The trade-off is
+that this stylesheet is outside version control — edit it in Webflow, and keep
+the variable contract (`--pillar-h`, `--pillar-open-w`) in sync with this
+component by hand.
 
 ## DOM Expectations
 

@@ -71,8 +71,21 @@ document the reason inline in the registry entry.
 
 ## CSS
 
-- Component stylesheets live in `src/components/styles/<name>.css`
-- Import CSS directly in JS files: `import './styles/component.css'`
+**Default: custom and component CSS goes in Webflow, not the bundle.** Add it as
+a named embed inside the `Global / Styles` component — one embed per concern,
+named for what it covers (`BG Grid`, `Pillars CSS`). The reason is authoring:
+CSS extracted into `dist/styles.css` does not render in the Designer, so
+anything shaping a component's appearance or states is invisible while you work
+on the canvas.
+
+Because that CSS sits outside version control, record the JS↔CSS contract — the
+custom properties each side reads and writes — in the component's doc.
+
+- **In the bundle** (`src/components/styles/<name>.css`, imported from JS) — the
+  narrower case: rules tied to a specific need rather than to a component's
+  appearance, e.g. an initial/pre-hydration state, or a fix that has to ship
+  and version together with the JS that depends on it.
+- Import bundled CSS directly in JS files: `import './styles/component.css'`
 - PostCSS handles nesting and autoprefixer (stage 2)
 - All CSS extracts to a single `dist/styles.css`
 - No CSS-in-JS, no CSS modules

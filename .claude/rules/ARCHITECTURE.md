@@ -53,7 +53,14 @@ Loaded before any components. Runs on every page regardless of data attributes. 
 
 It also carries the stylesheet-only imports migrated out of Webflow's head custom code (`styles/base.css`, `styles/explore.css`). These sit here because no single component owns them — Rollup extracts all CSS into a single `dist/styles.css` at build time, so the rules apply on every page regardless of which component JS actually loads.
 
-`pillars.css` used to live here too. It now belongs to the `pillars` component, which imports it directly — the accordion script it pairs with has been migrated out of its canvas embed, so the stylesheet has a clear owner. The CSS still lands in the same `dist/styles.css`; which chunk imports it makes no difference to the output.
+`pillars.css` used to live here, and is no longer in the bundle at all. It now lives in the **"Pillars CSS" embed** in the `Global / Styles` component on the Webflow canvas, so the accordion's open/closed states render in the Designer — CSS extracted into `dist/styles.css` never does. `bg-grid` splits the same way, for the same reason.
+
+### Where a stylesheet belongs
+
+- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice) and `Pillars CSS` (accordion states).
+- **In the bundle** (`src/components/styles/`, imported from JS) — the narrower case: rules tied to a specific need rather than to a component's appearance — an initial/pre-hydration state, or a fix that must ship and version together with the JS depending on it.
+
+The cost of the default is that the CSS leaves version control, so keep the JS↔CSS contract (the custom properties each side reads and writes) documented in the component's doc.
 
 ### Lifecycle
 

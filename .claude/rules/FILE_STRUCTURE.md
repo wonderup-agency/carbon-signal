@@ -13,8 +13,8 @@
 │   │   └── styles/                Component stylesheets (imported from JS)
 │   │       ├── base.css           Site-wide base overrides
 │   │       ├── explore.css        Explore-cards layout and dividers
-│   │       ├── nav.css            Nav scrolled-state rules
-│   │       └── pillars.css        Possibilities-pillars accordion states
+│   │       └── nav.css            Nav scrolled-state rules
+│   │                              (pillars CSS is a Webflow canvas embed, not here)
 │   └── pages/
 │       └── .gitkeep               Per-page standalone bundles go here
 │
