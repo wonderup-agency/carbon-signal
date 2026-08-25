@@ -12,9 +12,14 @@ Toggle dev mode:
   Console:  localStorage.dev = '1' to enable, delete localStorage.dev to disable
 
 Setup:
-  Assets are always served from the latest @main branch via jsDelivr.
-  Note: jsDelivr aggressively caches @main — changes may take time to
-  propagate. Use the jsDelivr purge API if you need instant updates.
+  Assets are served from an immutable tagged release via jsDelivr.
+
+  Bump the tag on every deploy. jsDelivr sends max-age=604800, so a mutable
+  ref like @main is cached in each visitor's browser for up to 7 days — and
+  since every build renames the hashed chunks, a stale main.js ends up
+  importing chunk filenames that no longer exist and 404s. Purging jsDelivr
+  does not clear a visitor's browser cache; only a new URL does. A tag per
+  release makes every URL immutable and sidesteps the whole problem.
 -->
 
 <!-- Preload CDN assets — browser fetches these immediately during HTML parse,
@@ -22,20 +27,20 @@ Setup:
 <link
   rel="preload"
   as="script"
-  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@main/dist/main.js"
+  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.0/dist/main.js"
   crossorigin
 />
 <link
   rel="preload"
   as="style"
-  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@main/dist/styles.css"
+  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.0/dist/styles.css"
 />
 
 <script>
   ;(function () {
     var dev = localStorage.dev
     var cdn =
-      'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@main/dist'
+      'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.0/dist'
     var base = dev ? 'http://127.0.0.1:8080' : cdn
 
     var link = document.createElement('link')
@@ -122,10 +127,10 @@ For page-specific bundles (src/pages/), add this to:
 Replace "bundle-name" with your page bundle name.
 The create-page script outputs the correct snippet automatically.
 
-  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@main/dist/bundle-name.js" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.0/dist/bundle-name.js" crossorigin>
   <script>
     (function () {
-      var base = window.__devBase || (localStorage.dev ? 'http://127.0.0.1:8080' : 'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@main/dist')
+      var base = window.__devBase || (localStorage.dev ? 'http://127.0.0.1:8080' : 'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.0/dist')
       var s = document.createElement('script')
       s.src = base + '/bundle-name.js'
       s.type = 'module'

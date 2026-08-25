@@ -36,8 +36,8 @@
 ## CDN & Deployment
 
 - **jsDelivr** — serves production assets from GitHub via `cdn.jsdelivr.net/gh/owner/repo@version/dist/`
-- Tagged releases (`@v1.0.0`) for instant cache invalidation
-- `@main` branch reference available but aggressively cached
+- **Tagged releases are what the site actually uses** (`@v1.0.0`). Bump the tag every deploy and update the snippet in Webflow Project Settings.
+- `@main` must NOT be used in production. jsDelivr sends `max-age=604800`, so a mutable ref sits in visitors' browsers for up to 7 days; since each build renames the hashed chunks, a stale `main.js` imports filenames that no longer exist and 404s. Purging fixes the edge only — not a visitor's browser cache.
 
 ## Tunneling
 

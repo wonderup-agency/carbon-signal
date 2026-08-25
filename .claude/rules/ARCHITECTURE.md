@@ -107,8 +107,10 @@ prebuild: eslint src/ && prettier . --write
 ## Deployment Flow
 
 ```
-Local dev → build → commit dist/ → push to GitHub → jsDelivr serves from @main
+Local dev → build → commit dist/ → push to GitHub → tag the release → jsDelivr serves the tag
 ```
 
-The Webflow site loads assets directly from jsDelivr CDN at `@main`. During local development, the snippet in `webflow-snippet.html` points to `localhost:8080` with `@main` CDN as the production fallback. jsDelivr aggressively caches `@main` — changes propagate within minutes; use the jsDelivr purge API for immediate updates.
+The Webflow site loads assets from an **immutable tagged release** on jsDelivr (`@v1.0.0`), not from `@main`. During local development the snippet in `webflow-snippet.html` points to `localhost:8080` with the pinned CDN URL as the production fallback.
+
+**Bump the tag on every deploy**, and update the snippet in Webflow Project Settings to match. This is not cosmetic: jsDelivr sends `max-age=604800`, so a mutable ref like `@main` sits in each visitor’s browser cache for up to 7 days. Because every build renames the hashed chunks, a stale `main.js` imports chunk filenames that no longer exist and 404s — the component silently never loads. Purging jsDelivr fixes the edge but cannot clear a visitor’s browser cache; only a new URL can. Pinning per release makes that class of bug impossible.
 
