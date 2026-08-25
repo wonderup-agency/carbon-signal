@@ -48,6 +48,24 @@ from doing that: maxTranslate becomes -((n - 1) * (collapsed + gap)), i.e. the
 last slide resting at the left edge — which is what a trailing offset was
 previously approximating — and snapGrid always holds more than one entry, so
 Swiper stops reporting isLocked and slider.css stops hiding the arrows.
+
+Why the arrows are driven from activeIndex
+------------------------------------------
+Swiper's navigation module derives its disabled state from isBeginning / isEnd,
+and those describe the *translate*: progress compares the current translate
+against maxTranslate(). With the grid derived that bound is correct — 4 * 352 =
+1408 on the About page — but the translate never quite settles on it, so isEnd
+stayed false while sitting on the last card. The arrow stayed live, the next
+click did nothing, and only the one after that disabled it.
+
+The two stop coinciding as soon as the active slide is a different width from the
+rest, and for this slider the end state that matters is "the last card is at the
+left edge" — which is a statement about activeIndex, not about the translate. So
+is-disabled is toggled here from activeIndex.
+
+Swiper keeps its own disabledClass at the library default, which nothing styles,
+so it cannot fight this one: its navigation update also runs on fromEdge, which
+can fire after activeIndexChange and would otherwise re-enable the next arrow.
 */
 
 import Swiper from 'swiper'
@@ -167,6 +185,20 @@ function initSlider(root) {
   const prevEl = root.querySelector('[data-slider-prev]')
   const nextEl = root.querySelector('[data-slider-next]')
 
+  /* See the header: the edge flags track the translate, so the disabled state is
+     derived from which card is active instead. Looping keeps every slide
+     reachable, so neither arrow is ever disabled there. */
+  function syncArrows(instance) {
+    if (loop) return
+    const last = instance.slides.length - 1
+    if (prevEl) {
+      prevEl.classList.toggle('is-disabled', instance.activeIndex === 0)
+    }
+    if (nextEl) {
+      nextEl.classList.toggle('is-disabled', instance.activeIndex === last)
+    }
+  }
+
   const swiper = new Swiper(viewport, {
     modules: [Navigation, A11y, Keyboard],
 
@@ -178,12 +210,14 @@ function initSlider(root) {
     loop,
     watchSlidesProgress: true,
 
+    /* Still wired, so Swiper handles the clicks — but disabledClass is left at
+       its default, which nothing styles. is-disabled is applied by syncArrows
+       instead; letting both write it means whichever fires last wins. */
     navigation:
       prevEl && nextEl
         ? {
             prevEl,
             nextEl,
-            disabledClass: 'is-disabled',
             lockClass: 'is-locked',
           }
         : false,
@@ -200,8 +234,16 @@ function initSlider(root) {
         defineGrid(instance)
       },
 
+      /* activeIndexChange rather than slideChange: slideChange reports
+         realIndex, which folds the non-looping edges together and misses
+         exactly the transitions this needs to catch. */
+      activeIndexChange(instance) {
+        syncArrows(instance)
+      },
+
       afterInit(instance) {
         instance.update()
+        syncArrows(instance)
       },
 
       resize(instance) {

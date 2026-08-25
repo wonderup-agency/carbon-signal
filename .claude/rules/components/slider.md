@@ -167,5 +167,30 @@ A root matching `[data-slider]` containing one `[data-slider-track]` whose direc
 children are `[data-slider-slide]`. Nested sliders are safe — only direct
 children of a track are claimed by that track.
 
-Swiper writes `is-disabled` and `is-locked` onto the arrow elements (renamed from
-Swiper's defaults so they read as Webflow classes).
+`is-disabled` is written onto the arrows **by this component**, from
+`activeIndex` — `prev` at index 0, `next` at the last index, neither when `loop`
+is on. `is-locked` is still Swiper's (renamed from its default so it reads as a
+Webflow class), though with a derived grid it never fires.
+
+### Why the arrows are not Swiper's job
+
+Swiper's navigation module derives disabled from `isBeginning` / `isEnd`, and
+those describe the **translate** — progress compares it against `maxTranslate()`.
+With the grid derived, that bound is right (`4 × 352 = 1408` on the About page)
+but the translate never quite settles on it, so `isEnd` stayed `false` while
+sitting on the last card. Live: `activeIndex: 4, isEnd: false`. The arrow stayed
+live, the next click did nothing, and only the click after that disabled it —
+mirrored at the start.
+
+The flags and the active card stop coinciding as soon as the active slide is a
+different width from the rest, and the end state that matters here is "the last
+card is at the left edge" — a statement about `activeIndex`.
+
+Hooked on `activeIndexChange`, plus once after init. Not `slideChange`, which
+reports `realIndex` and folds the non-looping edges together.
+
+Swiper's own `disabledClass` is left at the library default, which nothing styles
+(`swiper/css/navigation` is not imported). That is deliberate: its navigation
+update also runs on `fromEdge`, which can fire *after* `activeIndexChange` and
+would re-enable the next arrow. Letting both write `is-disabled` would make the
+result depend on event order.
