@@ -51,7 +51,7 @@ An array of `{ selector, importFn }` objects. The selector uses `data-component`
 
 Loaded before any components. Runs on every page regardless of data attributes. Use for analytics, global event listeners, shared setup.
 
-It also carries the stylesheet-only imports migrated out of Webflow's head custom code (`styles/base.css`, `styles/explore.css`). These sit here because no single component owns them — Rollup extracts all CSS into a single `dist/styles.css` at build time, so the rules apply on every page regardless of which component JS actually loads.
+It also carries `styles/base.css` — the only stylesheet left in the bundle. It hides the authoring-only Webflow Style Guide component, which is a specific need rather than component appearance, and it cannot move to a canvas embed because those embeds live inside the very component it hides.
 
 `pillars.css` used to live here, and is no longer in the bundle at all. It now lives in the **"Pillars CSS" embed** in the `Global / Styles` component on the Webflow canvas, so the accordion's open/closed states render in the Designer — CSS extracted into `dist/styles.css` never does. `bg-grid` splits the same way, for the same reason.
 

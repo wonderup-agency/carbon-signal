@@ -23,9 +23,16 @@ Place it on `.nav_component`.
 
 ## Dependencies
 
-`./styles/nav.css` — the scrolled-state rules. Both rules push toward
-`opacity: 1` only, so each element keeps whatever resting value its own Webflow
-variant defines.
+None in the bundle. The scrolled-state rules live in the **"Nav CSS" embed**
+inside the `Global / Styles` component on the Webflow canvas
+(element `db5a13b0-1a41-4a16-77a8-74f023994a02`, under the `Nav` wrapper).
+
+Both rules push toward `opacity: 1` only, so each element keeps whatever resting
+value its own Webflow variant defines.
+
+The contract with this component is the single attribute `data-scrolled`, which
+the JS writes and the CSS reads. Since that CSS is outside version control, keep
+the attribute name in sync by hand.
 
 ## DOM Expectations
 

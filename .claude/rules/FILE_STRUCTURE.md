@@ -10,11 +10,10 @@
 │   │   ├── bg-grid.js             Background grid phasing, snapping, deformation
 │   │   ├── nav.js                 Nav scroll-state flag
 │   │   ├── pillars.js             Possibilities-pillars accordion
-│   │   └── styles/                Component stylesheets (imported from JS)
-│   │       ├── base.css           Site-wide base overrides
-│   │       ├── explore.css        Explore-cards layout and dividers
-│   │       └── nav.css            Nav scrolled-state rules
-│   │                              (pillars CSS is a Webflow canvas embed, not here)
+│   │   └── styles/                Bundled stylesheets (imported from JS)
+│   │       └── base.css           Hides the authoring-only Style Guide component
+│   │                              (all other CSS lives in Global / Styles embeds
+│   │                               in Webflow — see CONVENTIONS.md)
 │   └── pages/
 │       └── .gitkeep               Per-page standalone bundles go here
 │

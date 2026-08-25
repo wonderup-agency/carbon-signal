@@ -1,9 +1,11 @@
 /*
 Component: nav
 Webflow attribute: data-component="nav"
-*/
 
-import './styles/nav.css'
+No stylesheet import: the scrolled-state rules live in the "Nav CSS" embed in
+the Global / Styles component on the Webflow canvas, so they render in the
+Designer. See CONVENTIONS.md — CSS defaults to Webflow, not the bundle.
+*/
 
 // Distance in px before the nav switches to its scrolled state.
 const threshold = 100
