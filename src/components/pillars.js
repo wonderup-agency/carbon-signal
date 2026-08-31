@@ -2,8 +2,14 @@
 Component: pillars
 Trigger selector: [data-pillars]
 
-Possibilities pillars accordion. The CSS owns the animation; this moves one
-attribute and publishes two measurements the CSS cannot work out on its own.
+Pillars accordion, desktop only. The CSS owns the animation; this moves one
+attribute and publishes the one measurement the CSS cannot work out on its own.
+
+Below 992px the panels are a plain stacked list with everything open. Featured
+resources have to be tappable straight away, so a tap-to-expand card fights the
+link sitting inside it; once one page stopped collapsing there was no reason for
+the other to differ. That removed the stacked accordion entirely, and with it
+--pillar-h and the height measuring that fed it.
 
 Migrated from a script-only HTML Embed inside the Section / Possibilities
 Pillars component. The embed's window.__csPillarsInit guard is gone: it existed
@@ -46,39 +52,48 @@ function normaliseState(group, panels) {
   group.setAttribute('data-pillars-ready', 'true')
 }
 
-/* Wires up one group and returns its measure function, so the component's
-   resize hook can re-measure every group. */
+/* Wires up one group and returns its update function, so the component's
+   resize hook can re-sync and re-measure every group. Resize is also how a
+   breakpoint crossing reaches syncMode. */
 function initGroup(group) {
   const panels = Array.from(group.querySelectorAll('[data-pillar]'))
   if (panels.length < 2) return null
 
   normaliseState(group, panels)
 
-  const bodies = Array.from(
-    group.querySelectorAll('.pillars_panel_visual-wrapper, .pillars_panel_para')
-  )
   let timer = null
 
-  /* 1. Stacked accordion animates max-height, and max-height cannot resolve
-     'auto'. Guessing a ceiling makes opening feel abrupt: the easing spends
-     most of its duration travelling through empty space above the real
-     content. Publish each element's own height instead. scrollHeight is
-     readable even while the element is clipped to 0, so closed panels
-     measure fine too. */
-  function measureHeights() {
-    bodies.forEach((el) => {
-      el.style.removeProperty('--pillar-h')
-      el.style.setProperty('--pillar-h', el.scrollHeight + 'px')
+  const isStacked = () => window.matchMedia(stacked).matches
+
+  /* Below 992px every panel is open and may carry its own stretched link, so
+     the button semantics have to come off — otherwise a screen reader is
+     offered a button wrapping an anchor, and the click handler competes with
+     the link for the same tap. Reapplied on the way back up. */
+  function syncMode() {
+    const off = isStacked()
+    panels.forEach((panel) => {
+      if (off) {
+        panel.removeAttribute('role')
+        panel.removeAttribute('tabindex')
+        panel.removeAttribute('aria-expanded')
+        return
+      }
+      panel.setAttribute('role', 'button')
+      panel.setAttribute('tabindex', '0')
+      panel.setAttribute(
+        'aria-expanded',
+        panel.getAttribute('data-pillar-state') === 'open' ? 'true' : 'false'
+      )
     })
   }
 
-  /* 2. Desktop content is locked to the width the panel has when open, so it
+  /* Desktop content is locked to the width the panel has when open, so it
      never re-wraps mid-transition. Derived rather than read off a live
      element, because the open panel is the thing that is moving. Closed
      panels sit at their flex-basis the whole time, so their width is a
      stable reference. */
   function measureWidth() {
-    if (window.matchMedia(stacked).matches) {
+    if (isStacked()) {
       group.style.removeProperty('--pillar-open-w')
       return
     }
@@ -102,16 +117,15 @@ function initGroup(group) {
     }
   }
 
-  /* width first, then heights: the new width decides how the copy wraps,
-     which decides how tall it is */
-  function measure() {
+  function update() {
+    syncMode()
     measureWidth()
-    measureHeights()
   }
 
   function open(panel) {
+    if (isStacked()) return
     if (panel.getAttribute('data-pillar-state') === 'open') return
-    measure() // copy may have reflowed since load
+    measureWidth() // copy may have reflowed since load
     panels.forEach((p) => {
       const isOpen = p === panel
       p.setAttribute('data-pillar-state', isOpen ? 'open' : 'closed')
@@ -120,13 +134,6 @@ function initGroup(group) {
   }
 
   panels.forEach((panel, i) => {
-    panel.setAttribute('role', 'button')
-    panel.setAttribute('tabindex', '0')
-    panel.setAttribute(
-      'aria-expanded',
-      panel.getAttribute('data-pillar-state') === 'open' ? 'true' : 'false'
-    )
-
     panel.addEventListener('click', () => {
       clearTimeout(timer)
       open(panel)
@@ -137,7 +144,7 @@ function initGroup(group) {
        transitions back to back. */
     panel.addEventListener('pointerenter', (ev) => {
       if (ev.pointerType === 'touch') return
-      if (window.matchMedia(stacked).matches) return
+      if (isStacked()) return
       clearTimeout(timer)
       timer = setTimeout(() => open(panel), hoverDelay)
     })
@@ -147,6 +154,7 @@ function initGroup(group) {
     })
 
     panel.addEventListener('keydown', (ev) => {
+      if (isStacked()) return
       if (ev.key === 'Enter' || ev.key === ' ') {
         ev.preventDefault()
         open(panel)
@@ -161,32 +169,27 @@ function initGroup(group) {
     })
   })
 
-  measure()
+  update()
 
-  /* images settle late and change the real height under us */
-  group.querySelectorAll('img').forEach((img) => {
-    if (img.complete) return
-    img.addEventListener('load', measure)
-  })
+  /* No image-load or fonts.ready hooks any more: they existed to re-measure
+     heights after late layout shifts. The remaining measurement reads the
+     group's own width and a collapsed panel's flex-basis, neither of which
+     moves when an image decodes or a font swaps. */
 
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(measure)
-  }
-
-  return measure
+  return update
 }
 
 /**
  * @param {HTMLElement[]} elements - All elements matching [data-pillars]
  */
 export default function (elements) {
-  const measures = elements.map(initGroup).filter(Boolean)
+  const updates = elements.map(initGroup).filter(Boolean)
 
   return {
     // Replaces the embed's own 150ms debounced resize listener — main.js
     // already debounces this hook by the same interval.
     resize() {
-      measures.forEach((measure) => measure())
+      updates.forEach((update) => update())
     },
   }
 }
