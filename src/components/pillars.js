@@ -13,16 +13,46 @@ bundle only ever evaluates this module once.
 No stylesheet import: the pillars CSS lives in the "Pillars CSS" embed in the
 Global / Styles component on the Webflow canvas, so the open/closed states
 render in the Designer — bundled CSS never does. Same split as bg-grid.
+
+Groups arrive from two kinds of markup. Possibilities hand-authors its panels
+and opens exactly one of them. Resources repeats a single template through a
+Webflow Collection List, so every rendered panel inherits the template's
+data-pillar-state="open" and the whole group reads as open — which also stops
+measureWidth publishing --pillar-open-w, since it needs at least one closed
+panel as a stable width reference. normaliseState settles both shapes before
+anything measures.
 */
 
 const hoverDelay = 90 // ms — see pointerenter below
 const stacked = '(max-width: 991px)'
+
+/* Reduces the group to exactly one open panel. A single authored open panel is
+   honoured; anything else — none, or the all-open state a Collection List
+   produces — falls back to the first.
+
+   Flagging the group afterwards releases the pre-script CSS gate in the
+   Pillars CSS embed, which holds CMS panels after the first in their closed
+   presentation. Without the flag the gate would keep overriding this. */
+function normaliseState(group, panels) {
+  const authored = panels.filter(
+    (p) => p.getAttribute('data-pillar-state') === 'open'
+  )
+  const initial = authored.length === 1 ? authored[0] : panels[0]
+
+  panels.forEach((p) => {
+    p.setAttribute('data-pillar-state', p === initial ? 'open' : 'closed')
+  })
+
+  group.setAttribute('data-pillars-ready', 'true')
+}
 
 /* Wires up one group and returns its measure function, so the component's
    resize hook can re-measure every group. */
 function initGroup(group) {
   const panels = Array.from(group.querySelectorAll('[data-pillar]'))
   if (panels.length < 2) return null
+
+  normaliseState(group, panels)
 
   const bodies = Array.from(
     group.querySelectorAll('.pillars_panel_visual-wrapper, .pillars_panel_para')

@@ -21,12 +21,41 @@ Related attributes:
 - `data-pillars` — the accordion group (the trigger)
 - `data-pillar` — an individual panel inside the group
 - `data-pillar-state` — `"open"` or `"closed"`, written by this component
+- `data-pillars-ready` — set to `"true"` on the group once the panel states have
+  been normalised; released to the CSS as a gate (see below)
+
+### Two kinds of markup
+
+Groups reach this component two ways, and both have to end up in the same state:
+
+- **Hand-authored** (Possibilities) — the panels are written out individually and
+  exactly one carries `data-pillar-state="open"`.
+- **Collection List repeated** (Resources) — one template panel is repeated, so
+  *every* rendered panel inherits the template's `data-pillar-state="open"` and
+  the whole group reads as open.
+
+`normaliseState` reduces either shape to exactly one open panel before anything
+measures: a single authored open panel is honoured, and anything else — none, or
+the all-open CMS state — falls back to the first panel.
+
+The all-open case is not only a visual problem. `measureWidth` needs at least one
+closed panel as a stable width reference, so it returns early on
+`if (!closed.length)` and `--pillar-open-w` is never published — the desktop copy
+then re-wraps mid-transition with no obvious cause.
+
+Once normalised, the group is flagged `data-pillars-ready="true"`. That releases
+a pre-script gate in the **Pillars CSS embed** which holds CMS panels after the
+first in their closed presentation, so the all-open markup never flashes before
+the JS runs. The gate must key off that attribute or it will keep overriding the
+normalised state.
 
 ## Behavior
 
-- **Init**: Per group, wires click / pointerenter / pointerleave / keydown on
-  each panel, sets `role="button"`, `tabindex="0"` and `aria-expanded`, then
-  measures. Hover opens on a 90ms delay so a cursor crossing the strip does not
+- **Init**: Per group, normalises the panel states (above), then wires click /
+  pointerenter / pointerleave / keydown on each panel, sets `role="button"`,
+  `tabindex="0"` and `aria-expanded`, then measures. The normalise step runs
+  first on purpose — both `aria-expanded` and the first `measure()` read
+  `data-pillar-state`. Hover opens on a 90ms delay so a cursor crossing the strip does not
   fire several 600ms width transitions back to back. Arrow keys move between
   panels; Enter and Space open. Also re-measures on late-loading images and on
   `document.fonts.ready`.
