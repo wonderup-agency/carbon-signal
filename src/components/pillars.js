@@ -5,6 +5,12 @@ Trigger selector: [data-pillars]
 Pillars accordion, desktop only. The CSS owns the animation; this moves one
 attribute and publishes the one measurement the CSS cannot work out on its own.
 
+On desktop the panels are absolutely positioned and moved with transforms.
+Animating flex-grow relaid out the whole row every frame and could not be
+composited, which showed as a stutter no amount of containment fixed; a
+translate runs off the main thread. The cost is that the geometry the flex box
+used to work out — widths, offsets, row height — now has to be computed here.
+
 Below 992px the panels are a plain stacked list with everything open. Featured
 resources have to be tappable straight away, so a tap-to-expand card fights the
 link sitting inside it; once one page stopped collapsing there was no reason for
@@ -23,10 +29,10 @@ render in the Designer — bundled CSS never does. Same split as bg-grid.
 Groups arrive from two kinds of markup. Possibilities hand-authors its panels
 and opens exactly one of them. Resources repeats a single template through a
 Webflow Collection List, so every rendered panel inherits the template's
-data-pillar-state="open" and the whole group reads as open — which also stops
-measureWidth publishing --pillar-open-w, since it needs at least one closed
-panel as a stable width reference. normaliseState settles both shapes before
-anything measures.
+data-pillar-state="open" and the whole group reads as open. normaliseState
+settles both shapes before anything measures: place() hands the open panel the
+whole remainder, so a group with two of them would lay panels on top of each
+other and run off the end of the row.
 */
 
 const hoverDelay = 90 // ms — see pointerenter below
@@ -62,6 +68,7 @@ function initGroup(group) {
   normaliseState(group, panels)
 
   let timer = null
+  let lastGeom = null
 
   const isStacked = () => window.matchMedia(stacked).matches
 
@@ -87,50 +94,87 @@ function initGroup(group) {
     })
   }
 
-  /* Desktop content is locked to the width the panel has when open, so it
-     never re-wraps mid-transition. Derived rather than read off a live
-     element, because the open panel is the thing that is moving. Closed
-     panels sit at their flex-basis the whole time, so their width is a
-     stable reference. */
-  function measureWidth() {
+  /* Panels are taken out of flow on desktop and placed by transform, so the
+     geometry has to be computed rather than left to flex. Widths come from the
+     collapsed width declared on the panel class; the open panel takes whatever
+     is left over.
+
+     --pillar-open-w doubles as the content width lock it always was, so the
+     copy never re-wraps mid-transition. */
+  function measureGeometry() {
     if (isStacked()) {
       group.style.removeProperty('--pillar-open-w')
-      return
+      group.style.removeProperty('--pillar-collapsed-w')
+      group.style.removeProperty('--pillars-h')
+      panels.forEach((p) => p.style.removeProperty('--pillar-x'))
+      return null
     }
-    const closed = panels.filter(
-      (p) => p.getAttribute('data-pillar-state') !== 'open'
-    )
-    if (!closed.length) return
 
-    const gap = parseFloat(getComputedStyle(group).columnGap) || 0
-    const collapsed = closed[0].getBoundingClientRect().width
+    const groupStyle = getComputedStyle(group)
+    const gap = parseFloat(groupStyle.columnGap) || 0
     const panelStyle = getComputedStyle(panels[0])
+    const collapsed = parseFloat(panelStyle.minWidth) || 0
     const pad =
       (parseFloat(panelStyle.paddingLeft) || 0) +
       (parseFloat(panelStyle.paddingRight) || 0)
 
     const openW =
       group.clientWidth - (panels.length - 1) * (gap + collapsed) - pad
+    if (openW <= 0) return null
 
-    if (openW > 0) {
-      group.style.setProperty('--pillar-open-w', Math.floor(openW) + 'px')
+    group.style.setProperty('--pillar-open-w', Math.floor(openW) + 'px')
+    group.style.setProperty('--pillar-collapsed-w', collapsed + 'px')
+
+    return { gap, collapsed, openW: Math.floor(openW) }
+  }
+
+  /* Walks the row once and writes each panel's x offset. Every panel before
+     the open one sits at a collapsed width, the open one is wide, everything
+     after is collapsed again — so the offsets are just a running total.
+
+     This is the whole point of the rewrite: the browser composites a
+     translate, where animating flex-grow forced the row to lay out all four
+     panels every frame. */
+  function place(geom) {
+    if (!geom) return
+    let x = 0
+    panels.forEach((panel) => {
+      panel.style.setProperty('--pillar-x', Math.round(x) + 'px')
+      const isOpen = panel.getAttribute('data-pillar-state') === 'open'
+      x += (isOpen ? geom.openW : geom.collapsed) + geom.gap
+    })
+  }
+
+  /* Absolute panels give the row no height of its own, so it gets one from
+     the tallest panel. Content is width-locked, so this only changes when the
+     group's width does. */
+  function measureHeight() {
+    if (isStacked()) return
+    const tallest = panels.reduce((max, p) => Math.max(max, p.scrollHeight), 0)
+    if (tallest > 0) {
+      group.style.setProperty('--pillars-h', tallest + 'px')
     }
   }
 
   function update() {
     syncMode()
-    measureWidth()
+    lastGeom = measureGeometry()
+    place(lastGeom)
+    measureHeight()
   }
 
   function open(panel) {
     if (isStacked()) return
     if (panel.getAttribute('data-pillar-state') === 'open') return
-    measureWidth() // copy may have reflowed since load
     panels.forEach((p) => {
       const isOpen = p === panel
       p.setAttribute('data-pillar-state', isOpen ? 'open' : 'closed')
       p.setAttribute('aria-expanded', isOpen ? 'true' : 'false')
     })
+    /* Re-place only. Re-measuring here would read layout mid-transition and
+       force a synchronous reflow on every hover; the widths have not changed,
+       only which panel is wide. */
+    place(lastGeom)
   }
 
   panels.forEach((panel, i) => {
@@ -171,10 +215,13 @@ function initGroup(group) {
 
   update()
 
-  /* No image-load or fonts.ready hooks any more: they existed to re-measure
-     heights after late layout shifts. The remaining measurement reads the
-     group's own width and a collapsed panel's flex-basis, neither of which
-     moves when an image decodes or a font swaps. */
+  /* The row's height is content-derived again, so a late-decoding image can
+     change it. Panel visuals carry an aspect-ratio, which makes the height
+     deterministic before decode, but a panel without one would not be. */
+  group.querySelectorAll('img').forEach((img) => {
+    if (img.complete) return
+    img.addEventListener('load', measureHeight)
+  })
 
   return update
 }

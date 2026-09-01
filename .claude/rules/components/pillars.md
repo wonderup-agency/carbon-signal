@@ -3,9 +3,33 @@
 ## Purpose
 
 Pillars accordion, **desktop only**. Moves the `data-pillar-state` attribute
-between panels and publishes the one measurement the CSS cannot derive on its
-own: `--pillar-open-w`, the width the open panel will have, so desktop copy does
-not re-wrap mid-transition.
+between panels and computes the geometry the CSS cannot derive on its own.
+
+### Desktop runs on transforms, not flex
+
+Animating `flex-grow` relaid out the whole row every frame — four panels, their
+subtrees and the row height — and `flex-grow` is not compositable, so it stayed
+on the main thread regardless. `contain: layout paint` helped the subtrees but
+not the row, and the stutter survived hiding the images, the rails and the grid
+canvas.
+
+Panels are therefore absolutely positioned above 992px and placed with
+`translateX`, which composites. Each panel still transitions its own width, but
+that is one contained element rather than a row reflow.
+
+The trade is that flex was doing the geometry and now this component does. It
+publishes four custom properties, all read by the Pillars CSS embed:
+
+| Property | On | Meaning |
+| --- | --- | --- |
+| `--pillar-collapsed-w` | group | collapsed width, read from the panel's `min-width` |
+| `--pillar-open-w` | group | the remainder, and the content width lock it always was |
+| `--pillar-x` | each panel | its x offset, a running total across the row |
+| `--pillars-h` | group | row height — absolute children give it none |
+
+`open()` re-places without re-measuring: only *which* panel is wide changes, not
+the widths, so hovering across the strip no longer forces a synchronous reflow
+per panel.
 
 Below 992px there is no accordion on either page — the panels are a plain stacked
 list with everything open. Featured resources have to be tappable straight away,
@@ -44,10 +68,9 @@ Groups reach this component two ways, and both have to end up in the same state:
 measures: a single authored open panel is honoured, and anything else — none, or
 the all-open CMS state — falls back to the first panel.
 
-The all-open case is not only a visual problem. `measureWidth` needs at least one
-closed panel as a stable width reference, so it returns early on
-`if (!closed.length)` and `--pillar-open-w` is never published — the desktop copy
-then re-wraps mid-transition with no obvious cause.
+The all-open case is not only a visual problem. `place()` hands the open panel
+the entire remaining width, so a group with two open panels would stack them on
+top of each other and run the row off its right edge.
 
 Once normalised, the group is flagged `data-pillars-ready="true"`. That releases
 a pre-script gate in the **Pillars CSS embed** which holds CMS panels after the
@@ -60,7 +83,8 @@ normalised state.
 - **Init**: Per group, normalises the panel states (above), then wires click /
   pointerenter / pointerleave / keydown on each panel, sets `role="button"`,
   `tabindex="0"` and `aria-expanded` — but only above 992px, see `syncMode`
-  below — then measures the open width. The normalise step runs first on purpose:
+  below — then computes the geometry and places the row. The normalise step runs
+  first on purpose:
   both `aria-expanded` and the first measurement read `data-pillar-state`. Hover
   opens on a 90ms delay so a cursor crossing the strip does not fire several
   600ms width transitions back to back. Arrow keys move between panels; Enter and
@@ -72,10 +96,12 @@ normalised state.
 - **Breakpoint**: Not used. The desktop/stacked split is read per-call via
   `matchMedia('(max-width: 991px)')`.
 
-No image-load or `document.fonts.ready` hooks: they existed to re-measure heights
-after late layout shifts. The remaining measurement reads the group's own width
-and a collapsed panel's flex-basis, neither of which moves when an image decodes
-or a font swaps.
+An image-load hook re-runs `measureHeight` only. Once the panels leave flow the
+row's height is content-derived again, so a late-decoding image can change it.
+Panel visuals carry an `aspect-ratio`, which makes the height deterministic
+before decode — but a panel added without one would not be, so the hook stays as
+the safety net. No `document.fonts.ready` hook: a font swap changes how the copy
+wraps, and the copy is width-locked to `--pillar-open-w`.
 
 ### Below 992px the button semantics come off
 
@@ -98,11 +124,13 @@ so nothing depends on `:has()` — live in the **"Pillars CSS" embed** inside th
 They sit there so the states render on the Designer canvas; CSS that ships in
 `dist/styles.css` never does. `bg-grid` splits the same way. The trade-off is
 that this stylesheet is outside version control — edit it in Webflow, and keep
-the variable contract (`--pillar-open-w`) in sync with this component by hand.
+the variable contract in sync with this component by hand — the embed reads all
+four of `--pillar-collapsed-w`, `--pillar-open-w`, `--pillar-x` and `--pillars-h`.
 
-The embed also carries two opt-ins this component never reads, so they are CSS
-only: `data-pillars-rail="stacked"` on a group rotates the rail's category tag,
-and `.item-link` is the stretched link a panel may wrap.
+The embed also carries three things this component never reads, so they are CSS
+only: `.pillars_panel_title.is-two-line` clamps a title to two lines,
+`.pillars_panel_rail-tag.is-vertical` fixes the rotated tag's padding axes, and
+`.item-link` is the stretched link a panel may wrap.
 
 ## DOM Expectations
 
