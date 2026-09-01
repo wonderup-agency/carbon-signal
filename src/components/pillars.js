@@ -42,9 +42,8 @@ const stacked = '(max-width: 991px)'
    honoured; anything else — none, or the all-open state a Collection List
    produces — falls back to the first.
 
-   Flagging the group afterwards releases the pre-script CSS gate in the
-   Pillars CSS embed, which holds CMS panels after the first in their closed
-   presentation. Without the flag the gate would keep overriding this. */
+   The group is not flagged ready here — that happens once the geometry has
+   been written, so the absolute layout never renders unplaced. */
 function normaliseState(group, panels) {
   const authored = panels.filter(
     (p) => p.getAttribute('data-pillar-state') === 'open'
@@ -54,8 +53,6 @@ function normaliseState(group, panels) {
   panels.forEach((p) => {
     p.setAttribute('data-pillar-state', p === initial ? 'open' : 'closed')
   })
-
-  group.setAttribute('data-pillars-ready', 'true')
 }
 
 /* Wires up one group and returns its update function, so the component's
@@ -187,6 +184,26 @@ function initGroup(group) {
     measureHeight()
   }
 
+  /* Two flags, and the order is the whole point of them.
+
+     [data-pillars-ready] switches the row to the absolute layout. It goes on
+     only after the geometry is written, so the panels are never absolute
+     without an x offset — otherwise they all stack at zero for a frame.
+
+     [data-pillars-animate] turns the transitions on, a frame later still.
+     Without it the first placement animates: every panel slides in from x=0
+     on load, which is the shuffle you could see. By the next frame the browser
+     has taken the placed positions as the starting point, so the only things
+     that animate are real state changes. */
+  function activate() {
+    group.setAttribute('data-pillars-ready', 'true')
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        group.setAttribute('data-pillars-animate', 'true')
+      })
+    })
+  }
+
   function open(panel) {
     if (isStacked()) return
     if (panel.getAttribute('data-pillar-state') === 'open') return
@@ -238,6 +255,7 @@ function initGroup(group) {
   })
 
   update()
+  activate()
 
   /* The row's height is content-derived again, so a late-decoding image can
      change it. Panel visuals carry an aspect-ratio, which makes the height

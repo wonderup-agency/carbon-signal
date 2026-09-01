@@ -51,12 +51,29 @@ and image load rather than running on every open. The height is read from
 nearest integer, which can land half a pixel short and clip the panel's bottom
 border.
 
-**`data-pillars-ready` now does double duty.** It was the CMS gate; it also
-switches the desktop layout from the flex fallback to the absolute/transform
-mode. The Designer canvas never runs the script, so without that gate every panel
-would sit at x=0 with no width while you edit. Everything between setting the
-flag and the first `place()` is synchronous inside `initGroup`, so no frame
-renders in between.
+### Three stages on load, and the order is the point
+
+| Stage | State |
+| --- | --- |
+| no flag | plain flex row, open panel sized by `flex-grow` — what the Designer canvas gets, since it never runs the script, and what the page shows before the bundle arrives |
+| `[data-pillars-ready]` | panels go absolute, placed by transform. Set **after** `update()` has written the geometry |
+| `[data-pillars-animate]` | transitions on, two `requestAnimationFrame`s later |
+
+Both flags exist because of the same failure: panels sliding in from x=0 on load.
+
+Setting `ready` before the geometry existed made the row go absolute with no
+`--pillar-x`, so every panel stacked at zero until the first `place()`. It is now
+set in `activate()`, after `update()`.
+
+That alone was not enough — the first placement still animated, because
+`transform` went from `none` to a real offset with the transition already live.
+Gating the transition behind a second flag, set two frames later, lets the
+browser take the placed positions as the starting point, so only real state
+changes animate afterwards.
+
+`data-pillars-ready` also still gates the CMS rules, which hold every panel after
+the first in its closed presentation until the script normalises the group.
+Moving the flag later only lengthens that hold, which is the safe direction.
 
 Below 992px there is no accordion on either page — the panels are a plain stacked
 list with everything open. Featured resources have to be tappable straight away,
@@ -78,8 +95,9 @@ Related attributes:
 - `data-pillars` — the accordion group (the trigger)
 - `data-pillar` — an individual panel inside the group
 - `data-pillar-state` — `"open"` or `"closed"`, written by this component
-- `data-pillars-ready` — set to `"true"` on the group once the panel states have
-  been normalised; released to the CSS as a gate (see below)
+- `data-pillars-ready` — set on the group once the geometry has been written;
+  switches the desktop layout to absolute (see below)
+- `data-pillars-animate` — set two frames after that; turns the transitions on
 
 ### Two kinds of markup
 
@@ -99,11 +117,11 @@ The all-open case is not only a visual problem. `place()` hands the open panel
 the entire remaining width, so a group with two open panels would stack them on
 top of each other and run the row off its right edge.
 
-Once normalised, the group is flagged `data-pillars-ready="true"`. That releases
-a pre-script gate in the **Pillars CSS embed** which holds CMS panels after the
-first in their closed presentation, so the all-open markup never flashes before
-the JS runs. The gate must key off that attribute or it will keep overriding the
-normalised state.
+Until the group is flagged `data-pillars-ready`, a pre-script gate in the
+**Pillars CSS embed** holds every CMS panel after the first in its closed
+presentation, so the all-open markup never flashes before the JS runs. The gate
+must key off that attribute or it will keep overriding the normalised state.
+`normaliseState` itself no longer sets the flag — see the three stages below.
 
 ## Behavior
 
