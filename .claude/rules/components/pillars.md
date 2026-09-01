@@ -31,6 +31,22 @@ publishes four custom properties, all read by the Pillars CSS embed:
 the widths, so hovering across the strip no longer forces a synchronous reflow
 per panel.
 
+**`--pillars-h` has to be cleared before it is read.** The embed sets
+`height: var(--pillars-h, auto)` on the panels as well as the row, so measuring a
+panel while the variable is set just returns the value already in it — the row
+could never grow to fit its content, which collapsed the visual and wrapped the
+vertical rail titles into columns. `measureHeight` removes the property first so
+the panels fall back to `height: auto` and report their real height. That is one
+deliberate forced reflow; it is why the measurement is confined to init, resize
+and image load rather than running on every open.
+
+**`data-pillars-ready` now does double duty.** It was the CMS gate; it also
+switches the desktop layout from the flex fallback to the absolute/transform
+mode. The Designer canvas never runs the script, so without that gate every panel
+would sit at x=0 with no width while you edit. Everything between setting the
+flag and the first `place()` is synchronous inside `initGroup`, so no frame
+renders in between.
+
 Below 992px there is no accordion on either page — the panels are a plain stacked
 list with everything open. Featured resources have to be tappable straight away,
 so a tap-to-expand card fights the link sitting inside it; once one page stopped

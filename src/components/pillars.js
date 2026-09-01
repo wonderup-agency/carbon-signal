@@ -145,12 +145,20 @@ function initGroup(group) {
     })
   }
 
-  /* Absolute panels give the row no height of its own, so it gets one from
-     the tallest panel. Content is width-locked, so this only changes when the
-     group's width does. */
+  /* Absolute panels give the row no height of its own, so it gets one from the
+     tallest panel. The measurement has to clear --pillars-h first: the panels
+     size themselves from that same variable, so reading them while it is set
+     just returns the value already in it and the row can never grow to fit its
+     content. Cleared, they fall back to height:auto and report the real thing.
+
+     One forced reflow, on init and resize only. */
   function measureHeight() {
-    if (isStacked()) return
-    const tallest = panels.reduce((max, p) => Math.max(max, p.scrollHeight), 0)
+    if (isStacked()) {
+      group.style.removeProperty('--pillars-h')
+      return
+    }
+    group.style.removeProperty('--pillars-h')
+    const tallest = panels.reduce((max, p) => Math.max(max, p.offsetHeight), 0)
     if (tallest > 0) {
       group.style.setProperty('--pillars-h', tallest + 'px')
     }
