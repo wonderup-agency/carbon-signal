@@ -94,6 +94,7 @@ const defaults = {
   speed: 600,
   gap: 0,
   loop: false,
+  drag: true,
 }
 
 /* Mirrors the var() fallbacks in slider.css. Two copies is the price of the
@@ -176,6 +177,12 @@ function initSlider(root) {
   const gap = num(root, 'data-slider-gap', defaults.gap)
   const loop = bool(root, 'data-slider-loop', defaults.loop)
 
+  /* data-slider-drag="false" turns the slider into a browse-and-pick list:
+     dragging off, clicking a card selects it. One knob rather than two, since
+     a slider you cannot drag needs some other way to reach a card, and a
+     slider you can drag should not also hijack clicks. */
+  const drag = bool(root, 'data-slider-drag', defaults.drag)
+
   /* Publish the duration so the CSS widening the active slide uses exactly the
      same timing. If the two drift apart the slide resizes while Swiper is still
      translating and the row visibly tears. */
@@ -247,6 +254,7 @@ function initSlider(root) {
     speed,
     loop,
     watchSlidesProgress: true,
+    allowTouchMove: drag,
 
     navigation:
       prevEl && nextEl
@@ -295,6 +303,24 @@ function initSlider(root) {
       },
     },
   })
+
+  /* Click to select, wired here rather than through Swiper's own
+     slideToClickedSlide: that option is handled inside the touch handlers,
+     which allowTouchMove:false switches off, so it silently never fires.
+
+     Listens on the track so it keeps working if slides are added later, and
+     ignores anything inside a link or button so a card that is itself
+     interactive still behaves normally. */
+  if (!drag) {
+    track.addEventListener('click', (ev) => {
+      if (ev.target.closest('a, button')) return
+      const slide = ev.target.closest('[data-slider-slide]')
+      if (!slide) return
+      const index = slides.indexOf(slide)
+      if (index < 0 || index === swiper.activeIndex) return
+      swiper.slideTo(index)
+    })
+  }
 
   /* Webfonts landing after init change how the copy wraps, which changes slide
      heights. Swiper's own observer catches resizes but not this. */

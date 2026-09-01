@@ -48,6 +48,25 @@ All optional, all on the root:
 | `data-slider-speed`  | `600`   | Transition duration in ms            |
 | `data-slider-gap`    | `0`     | Space between slides in px           |
 | `data-slider-loop`   | `false` | Wrap around; any value but `"false"` is true |
+| `data-slider-drag`   | `true`  | `"false"` turns dragging off and clicking a card selects it |
+
+### `data-slider-drag="false"` — browse-and-pick
+
+For a slider that reads as a list you choose from rather than a filmstrip. A
+widening active card also makes dragging feel like it fights the snap, so the two
+tend to go together.
+
+It is deliberately **one** knob rather than two: a slider you cannot drag needs
+some other way to reach a card, and a slider you *can* drag should not also
+hijack clicks. So the attribute sets `allowTouchMove` and wires click-to-select
+as a pair.
+
+Click-to-select is wired directly rather than through Swiper's
+`slideToClickedSlide`, which lives inside the touch handlers that
+`allowTouchMove: false` switches off — it would silently never fire. The listener
+sits on the track, so slides added later still work; it skips clicks inside an
+`a` or `button` so an interactive card behaves normally, and no-ops on the
+already-active slide.
 
 ### Sizing
 
