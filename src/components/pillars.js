@@ -104,6 +104,7 @@ function initGroup(group) {
   function measureGeometry() {
     if (isStacked()) {
       group.style.removeProperty('--pillar-open-w')
+      group.style.removeProperty('--pillar-panel-w')
       group.style.removeProperty('--pillar-collapsed-w')
       group.style.removeProperty('--pillars-h')
       panels.forEach((p) => p.style.removeProperty('--pillar-x'))
@@ -117,15 +118,25 @@ function initGroup(group) {
     const pad =
       (parseFloat(panelStyle.paddingLeft) || 0) +
       (parseFloat(panelStyle.paddingRight) || 0)
+    const border =
+      (parseFloat(panelStyle.borderLeftWidth) || 0) +
+      (parseFloat(panelStyle.borderRightWidth) || 0)
 
-    const openW =
-      group.clientWidth - (panels.length - 1) * (gap + collapsed) - pad
-    if (openW <= 0) return null
+    /* Two different widths, and conflating them is what pushed the visual past
+       the panel's right padding. --pillar-panel-w is the panel's own
+       border-box width, which is what the row's arithmetic and the width
+       transition need. --pillar-open-w is the content box inside it, which is
+       what the head, para and visual lock themselves to so the copy cannot
+       re-wrap mid-transition. */
+    const panelW = group.clientWidth - (panels.length - 1) * (gap + collapsed)
+    if (panelW <= 0) return null
+    const contentW = panelW - pad - border
 
-    group.style.setProperty('--pillar-open-w', Math.floor(openW) + 'px')
+    group.style.setProperty('--pillar-panel-w', Math.floor(panelW) + 'px')
+    group.style.setProperty('--pillar-open-w', Math.floor(contentW) + 'px')
     group.style.setProperty('--pillar-collapsed-w', collapsed + 'px')
 
-    return { gap, collapsed, openW: Math.floor(openW) }
+    return { gap, collapsed, panelW: Math.floor(panelW) }
   }
 
   /* Walks the row once and writes each panel's x offset. Every panel before
@@ -141,7 +152,7 @@ function initGroup(group) {
     panels.forEach((panel) => {
       panel.style.setProperty('--pillar-x', Math.round(x) + 'px')
       const isOpen = panel.getAttribute('data-pillar-state') === 'open'
-      x += (isOpen ? geom.openW : geom.collapsed) + geom.gap
+      x += (isOpen ? geom.panelW : geom.collapsed) + geom.gap
     })
   }
 
@@ -158,9 +169,14 @@ function initGroup(group) {
       return
     }
     group.style.removeProperty('--pillars-h')
-    const tallest = panels.reduce((max, p) => Math.max(max, p.offsetHeight), 0)
+    /* Fractional, then rounded up. offsetHeight rounds to the nearest integer,
+       which can land half a pixel short and clip the panel's bottom border. */
+    const tallest = panels.reduce(
+      (max, p) => Math.max(max, p.getBoundingClientRect().height),
+      0
+    )
     if (tallest > 0) {
-      group.style.setProperty('--pillars-h', tallest + 'px')
+      group.style.setProperty('--pillars-h', Math.ceil(tallest) + 'px')
     }
   }
 

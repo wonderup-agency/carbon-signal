@@ -27,20 +27,20 @@ Setup:
 <link
   rel="preload"
   as="script"
-  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.9/dist/main.js"
+  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.10/dist/main.js"
   crossorigin
 />
 <link
   rel="preload"
   as="style"
-  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.9/dist/styles.css"
+  href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.10/dist/styles.css"
 />
 
 <script>
   ;(function () {
     var dev = localStorage.dev
     var cdn =
-      'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.9/dist'
+      'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.10/dist'
     var base = dev ? 'http://127.0.0.1:8080' : cdn
 
     var link = document.createElement('link')
@@ -127,10 +127,10 @@ For page-specific bundles (src/pages/), add this to:
 Replace "bundle-name" with your page bundle name.
 The create-page script outputs the correct snippet automatically.
 
-  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.9/dist/bundle-name.js" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.10/dist/bundle-name.js" crossorigin>
   <script>
     (function () {
-      var base = window.__devBase || (localStorage.dev ? 'http://127.0.0.1:8080' : 'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.9/dist')
+      var base = window.__devBase || (localStorage.dev ? 'http://127.0.0.1:8080' : 'https://cdn.jsdelivr.net/gh/wonderup-agency/carbon-signal@v1.0.10/dist')
       var s = document.createElement('script')
       s.src = base + '/bundle-name.js'
       s.type = 'module'

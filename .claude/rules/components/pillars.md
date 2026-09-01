@@ -22,10 +22,18 @@ publishes four custom properties, all read by the Pillars CSS embed:
 
 | Property | On | Meaning |
 | --- | --- | --- |
-| `--pillar-collapsed-w` | group | collapsed width, read from the panel's `min-width` |
-| `--pillar-open-w` | group | the remainder, and the content width lock it always was |
+| `--pillar-collapsed-w` | group | a closed panel, border box — from the panel's `min-width` |
+| `--pillar-panel-w` | group | the open panel, border box — drives its width and the x offsets |
+| `--pillar-open-w` | group | the content box *inside* that panel |
 | `--pillar-x` | each panel | its x offset, a running total across the row |
 | `--pillars-h` | group | row height — absolute children give it none |
+
+**The two open widths are not interchangeable.** `--pillar-open-w` subtracts the
+panel's padding and border because its job is locking the head, para and visual
+so the copy cannot re-wrap while the panel is moving. Using it as the panel width
+too made the panel one padding narrower than the row's arithmetic assumed, while
+its children stayed at full content width and spilled past the right padding.
+`--pillar-panel-w` is the border-box value the layout needs.
 
 `open()` re-places without re-measuring: only *which* panel is wide changes, not
 the widths, so hovering across the strip no longer forces a synchronous reflow
@@ -38,7 +46,10 @@ could never grow to fit its content, which collapsed the visual and wrapped the
 vertical rail titles into columns. `measureHeight` removes the property first so
 the panels fall back to `height: auto` and report their real height. That is one
 deliberate forced reflow; it is why the measurement is confined to init, resize
-and image load rather than running on every open.
+and image load rather than running on every open. The height is read from
+`getBoundingClientRect()` and rounded **up** — `offsetHeight` rounds to the
+nearest integer, which can land half a pixel short and clip the panel's bottom
+border.
 
 **`data-pillars-ready` now does double duty.** It was the CMS gate; it also
 switches the desktop layout from the flex fallback to the absolute/transform
