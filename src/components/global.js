@@ -1,4 +1,5 @@
 import './styles/base.css'
+import initSmoothScroll from './smooth-scroll.js'
 
 /*
 Site-wide setup.
@@ -11,5 +12,10 @@ inside the very component it hides.
 Everything else is a named embed in the Global / Styles component on the Webflow
 canvas: BG Grid, Pillars CSS, Nav CSS. Bundled CSS never renders in the
 Designer. See CONVENTIONS.md.
+
+Smooth scroll is initialised here rather than registered in components.js: it
+has no markup to match a selector against and applies to every page.
 */
-export default function () {}
+export default function () {
+  initSmoothScroll()
+}

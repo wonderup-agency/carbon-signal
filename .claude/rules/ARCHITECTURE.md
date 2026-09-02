@@ -51,6 +51,8 @@ An array of `{ selector, importFn }` objects. The selector uses `data-component`
 
 Loaded before any components. Runs on every page regardless of data attributes. Use for analytics, global event listeners, shared setup.
 
+It also initialises **smooth scroll** (`smooth-scroll.js`, wrapping Lenis). That module is not in the registry: it has no markup to match a selector against, so `global.js` calls it directly. The trade-off is that it ships in the global chunk and therefore loads on every page — about 5.5KB gzipped — where everything else heavy in this project is code-split behind a selector. See `components/smooth-scroll.md`.
+
 It also carries `styles/base.css` — the only stylesheet left in the bundle. It hides the authoring-only Webflow Style Guide component, which is a specific need rather than component appearance, and it cannot move to a canvas embed because those embeds live inside the very component it hides.
 
 `pillars.css` used to live here, and is no longer in the bundle at all. It now lives in the **"Pillars CSS" embed** in the `Global / Styles` component on the Webflow canvas, so the accordion's open/closed states render in the Designer — CSS extracted into `dist/styles.css` never does. `bg-grid` splits the same way, for the same reason.

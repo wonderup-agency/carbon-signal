@@ -11,6 +11,8 @@
 │   │   ├── nav.js                 Nav scroll-state flag
 │   │   ├── pillars.js             Possibilities-pillars accordion
 │   │   ├── slider.js              All sliders (Swiper), attribute-configured
+│   │   ├── smooth-scroll.js       Site-wide smooth scroll (Lenis) — not registered,
+│   │   │                          called directly from global.js
 │   │   └── styles/                Bundled stylesheets (imported from JS)
 │   │       ├── base.css           Hides the authoring-only Style Guide component
 │   │       └── slider.css         Variable-width slide mechanism (versions with slider.js)

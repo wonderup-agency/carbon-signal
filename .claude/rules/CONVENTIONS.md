@@ -69,6 +69,17 @@ phasing logic is inherently page-wide. Prefer `data-component` by default —
 reach for this only when a dedicated attribute would be redundant markup, and
 document the reason inline in the registry entry.
 
+### Modules that are not registered at all
+
+A browser module with **no markup to match** does not belong in the registry.
+`smooth-scroll.js` is the case: it applies to the whole document, so `global.js`
+imports and calls it directly. It still lives in `src/components/` — that is
+where browser modules go — and still gets a doc under `.claude/rules/components/`.
+
+Reach for this only when there is genuinely no selector. The registry exists so
+code loads only on pages that need it, and stepping outside it means the module
+ships in the global chunk on every page; say so in its doc, with the cost.
+
 ## CSS
 
 **Default: custom and component CSS goes in Webflow, not the bundle.** Add it as

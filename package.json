@@ -52,6 +52,7 @@
     "rollup-plugin-postcss": "^4.0.2"
   },
   "dependencies": {
+    "lenis": "^1.3.26",
     "swiper": "^14.1.0"
   }
 }

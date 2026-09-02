@@ -52,9 +52,21 @@
   keyboard handling. Swiper's Navigation *CSS* is intentionally not imported —
   the arrows are Webflow elements.
 
+## Smooth scroll
+
+- **Lenis** (v1) — site-wide smooth scrolling via `smooth-scroll.js`. Chosen over
+  wrapper-transform libraries because it drives the *real* scroll position, so
+  `position: sticky`, `IntersectionObserver` and CSS `view()` timelines keep
+  working — all of which this site uses. Skipped entirely under
+  `prefers-reduced-motion`, and `syncTouch` left off so native momentum
+  scrolling survives on touch devices.
+- Unlike Swiper it is **not code-split**: it has no selector to trigger on, so it
+  ships in the global chunk and loads on every page (~5.5KB gzipped, plus ~130
+  bytes of its CSS).
+
 ## Dependencies
 
-- **Runtime**: `swiper` (bundled to the browser), `picocolors` (used by scripts
-  only, not bundled to browser)
+- **Runtime**: `swiper` and `lenis` (both bundled to the browser), `picocolors`
+  (used by scripts only, not bundled to browser)
 - **Dev**: All other deps are devDependencies (Rollup, ESLint, Prettier, etc.)
 - No frontend framework — vanilla JavaScript only
