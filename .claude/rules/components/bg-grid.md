@@ -37,6 +37,29 @@ Related attributes already in use:
   miss. Also re-runs on `document.fonts.ready` and `window.load`.
 - **Breakpoint**: Not used
 
+### The deformation loop stops when the picture stops changing
+
+`step()` reports whether anything actually **changed** this frame — the
+frame-over-frame delta in each point's energy and position — not whether the
+lattice is currently deformed.
+
+It used to test magnitudes (`p.e > 0.002`) and OR in `live`, and `active` only
+clears on `pointerleave`. So a cursor resting anywhere inside an interactive
+section held `p.e` at a steady non-zero value with `active` still true, `step()`
+could never report idle, and `frame()` redrew an identical lattice at full rate
+for as long as the pointer stayed put — thousands of `beginPath`/`stroke` pairs
+per frame, on a 2× backing store on Retina, for no visible change.
+
+Because the canvas already shows the settled shape when the loop exits,
+stopping is visually correct; the next `pointermove` calls `kick()` and picks it
+back up.
+
+Note this does **not** make the deformation follow a scroll. `px`/`py` are
+section-relative and only written on `pointermove`, so after a scroll the
+lattice stays deformed wherever the cursor last was in the section until the
+next pointer move — as it always has. The loop is simply idle while that is
+true instead of burning frames on it.
+
 ## Dependencies
 
 None. The static grid CSS lives in the Webflow canvas embed, not here.

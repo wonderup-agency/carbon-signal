@@ -10,9 +10,9 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "concurrently \"rollup --config rollup.config.dev.js --watch\" \"http-server -c-1 --cors --proxy http://127.0.0.1:8080? ./dist\"",
+    "dev": "concurrently \"rollup --config rollup.config.dev.js --watch\" \"http-server -c-1 --cors --proxy http://127.0.0.1:8080? ./dev\"",
     "dev:build": "rollup --config rollup.config.dev.js --watch",
-    "dev:server": "http-server -c-1 --cors --proxy http://127.0.0.1:8080? ./dist",
+    "dev:server": "http-server -c-1 --cors --proxy http://127.0.0.1:8080? ./dev",
     "build": "rollup --config rollup.config.prod.js",
     "prebuild": "eslint src/ && prettier . --write",
     "format": "prettier . --write",

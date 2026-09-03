@@ -5,3 +5,4 @@ node_modules
 scripts/dashboard.js
 scripts/dashboard/
 .claude/rules/DASHBOARD.md
+dev

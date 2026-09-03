@@ -87,19 +87,23 @@ A shared config object importable by any component or page. Holds project-level 
 ```
 concurrently:
   → Rollup watch (rollup.config.dev.js)
-    → del (clean dist/ once on first build)
+    → del (clean dev/ once on first build)
     → checkGlobalJs plugin (warns if global.js missing)
     → resolve + commonjs (handle npm packages)
-    → postcss (extract CSS to dist/styles.css)
-  → http-server (serves dist/ on :8080)
+    → postcss (extract CSS to dev/styles.css)
+  → http-server (serves dev/ on :8080)
 ```
+
+Dev writes to `dev/`, not `dist/`. `dist/` is the committed deploy artifact, and
+a watch build writing there overwrites the shipped bundle with unminified,
+sourcemapped scratch code. `dev/` is gitignored and disposable. See ROLLUP.md.
 
 ### Prod (`npm run build`)
 
 ```
 prebuild: eslint src/ && prettier . --write
   → rollup (rollup.config.prod.js)
-    → del (clean dist/)
+    → del (clean dist/ — every build, so dist/ only ever holds the current release)
     → checkGlobalJs plugin
     → resolve + commonjs
     → postcss (extract + minimize CSS)

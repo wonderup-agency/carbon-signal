@@ -2,6 +2,20 @@
 
 Two separate configs: `rollup.config.dev.js` (development) and `rollup.config.prod.js` (production).
 
+## Dev and prod write to different directories
+
+`dist/` is the **deploy artifact**: prod-only, committed to git, served by
+jsDelivr. `dev/` is **scratch**: dev-only, gitignored, served by http-server.
+
+They used to share `dist/`, and that was a bug in two directions. A watch build
+overwrote the committed bundle with unminified, `console`-laden, sourcemapped
+code — so whatever was in `dist/` after a dev session was no longer what had been
+deployed. And because the dev config cleans only once (`runOnce`) while chunk
+names carry a content hash, every save emitted a *new* filename and left the old
+chunk behind: one edit to `bg-grid.js`, one more `bg-grid-<hash>.js` forever.
+
+Both are fixed at the root — separate directories, and no hash in dev (below).
+
 ## Shared structure
 
 Both configs share the same entry points and helper functions:
@@ -17,15 +31,26 @@ Custom Rollup plugin that runs at `buildStart`. Checks if `src/components/global
 
 ### Output
 
-Both use `dir: 'dist'`, `format: 'es'`, `entryFileNames: '[name].js'`, `chunkFileNames: '[name]-[hash].js'`.
+Both use `format: 'es'` and `entryFileNames: '[name].js'`. They differ in
+directory and chunk naming:
+
+|                  | Dev              | Prod                  |
+| ---------------- | ---------------- | --------------------- |
+| `dir`            | `dev`            | `dist`                |
+| `chunkFileNames` | `[name].js`      | `[name]-[hash].js`    |
+
+The content hash exists to bust the jsDelivr cache, and jsDelivr is not involved
+in dev — http-server runs with `-c-1`, so nothing is cached to bust. Dropping it
+locally means a rebuilt chunk overwrites itself in place instead of accumulating
+a new file per save.
 
 ## Dev config (`rollup.config.dev.js`)
 
 Plugins: `del` → `checkGlobalJs` → `resolve` → `commonjs` → `postcss`
 
 - **Sourcemaps**: Enabled (`sourcemap: true` in output, `sourceMap: true` in postcss).
-- **PostCSS**: Extracts CSS to `dist/styles.css` (`extract: 'styles.css'`). Same as prod. Uses `postcss-preset-env` at stage 2 (nesting, autoprefixer). CSS is minimized. A `<link>` tag is needed in both dev and prod.
-- **Clean**: `rollup-plugin-delete` removes `dist/*` once on the first build (`runOnce: true`). In watch mode, subsequent rebuilds do not re-clean, so the dev server is uninterrupted.
+- **PostCSS**: Extracts CSS to `dev/styles.css` (`extract: 'styles.css'` — relative to the output `dir`, so it follows dev/prod). Uses `postcss-preset-env` at stage 2 (nesting, autoprefixer). CSS is minimized. A `<link>` tag is needed in both dev and prod.
+- **Clean**: `rollup-plugin-delete` removes `dev/*` once on the first build (`runOnce: true`). In watch mode, subsequent rebuilds do not re-clean, so the dev server is never serving a directory that is mid-delete. Unhashed chunk names are what make that safe — a rebuild replaces files rather than adding to them, so stale output cannot pile up between cleans.
 - **No terser**: Code is not minified.
 
 ## Prod config (`rollup.config.prod.js`)
@@ -42,16 +67,18 @@ Plugins: `del` → `checkGlobalJs` → `resolve` → `commonjs` → `postcss` �
 
 |               | Dev                                    | Prod                                 |
 | ------------- | -------------------------------------- | ------------------------------------ |
+| Output dir    | `dev/` (gitignored)                    | `dist/` (committed, on jsDelivr)     |
+| Chunk names   | `[name].js`                            | `[name]-[hash].js`                   |
 | Sourcemaps    | Yes                                    | No                                   |
-| CSS handling  | Extracted to `dist/styles.css`         | Extracted to `dist/styles.css`       |
+| CSS handling  | Extracted to `dev/styles.css`          | Extracted to `dist/styles.css`       |
 | Minification  | No                                     | Terser (JS) + PostCSS minimize (CSS) |
 | Console logs  | Kept                                   | Stripped                             |
 | Comments      | Kept                                   | Stripped                             |
-| Clean dist    | Yes, once on first build (`runOnce`)   | Yes, every build (`del`)             |
+| Clean output  | Yes, once on first build (`runOnce`)   | Yes, every build (`del`)             |
 | Lint + format | No                                     | Yes (prebuild hook)                  |
 
 ## Adding plugins
 
 - Dev plugins go in `rollup.config.dev.js` only.
-- Prod plugins go in `rollup.config.prod.js` only. Keep `del` first (cleans dist) and `terser` last (minifies final output).
+- Prod plugins go in `rollup.config.prod.js` only. Keep `del` first (cleans the output dir) and `terser` last (minifies final output).
 - Shared plugins (resolve, commonjs, postcss) must be updated in both files — they are not shared via a common module.

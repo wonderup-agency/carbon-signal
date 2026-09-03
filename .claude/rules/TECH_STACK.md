@@ -12,13 +12,13 @@
   - `@rollup/plugin-node-resolve` — resolves node_modules imports
   - `@rollup/plugin-commonjs` — converts CJS dependencies to ESM
   - `@rollup/plugin-terser` — minification (prod only)
-  - `rollup-plugin-delete` — cleans `dist/` before prod builds
+  - `rollup-plugin-delete` — cleans the output dir (`dist/` before every prod build, `dev/` once per watch session)
   - `rollup-plugin-postcss` — CSS processing and extraction
 
 ## CSS
 
 - **PostCSS** with `postcss-preset-env` (stage 2) — nesting, autoprefixer
-- CSS is extracted to `dist/styles.css` in both dev and prod
+- CSS is extracted to `styles.css` alongside the JS in both dev and prod (`dev/styles.css` in dev, `dist/styles.css` in prod)
 - CSS is imported directly in JS files — no separate CSS build step
 
 ## Linting & Formatting
@@ -30,7 +30,7 @@
 
 ## Dev Server
 
-- **http-server** — serves `dist/` on `http://127.0.0.1:8080` with CORS enabled
+- **http-server** — serves `dev/` on `http://127.0.0.1:8080` with CORS enabled. Not `dist/`: that is the committed prod artifact and the dev build never touches it (see ROLLUP.md)
 - **concurrently** — runs Rollup watch + http-server in parallel for `npm run dev`
 
 ## CDN & Deployment

@@ -42,14 +42,21 @@ export default defineConfig({
     ...getPageEntries(),
   },
   output: {
-    dir: 'dist',
+    // Dev output is kept out of dist/ on purpose. dist/ is the deploy
+    // artifact and is committed; a watch build writing into it overwrites
+    // the shipped bundle with unminified, console-laden, sourcemapped code.
+    dir: 'dev',
     format: 'es',
     entryFileNames: '[name].js',
-    chunkFileNames: '[name]-[hash].js',
+    // No content hash here, unlike prod. The hash exists to bust the CDN
+    // cache, and jsDelivr is not involved in dev — http-server runs with
+    // -c-1. With a hash, every save emits a new filename and the old chunk
+    // is never cleaned up, so the directory grows by one file per edit.
+    chunkFileNames: '[name].js',
     sourcemap: true,
   },
   plugins: [
-    del({ targets: 'dist/*', runOnce: true }),
+    del({ targets: 'dev/*', runOnce: true }),
     checkGlobalJs(),
     resolve(),
     commonjs(),

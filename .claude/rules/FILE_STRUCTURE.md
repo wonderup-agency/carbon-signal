@@ -21,10 +21,16 @@
 │   └── pages/
 │       └── .gitkeep               Per-page standalone bundles go here
 │
-├── dist/                          Build output (committed to git, cleaned by prod build)
+├── dist/                          PROD build output — committed to git, served by
+│   │                              jsDelivr, wiped and rewritten by every `npm run build`.
+│   │                              Never written to by the dev build.
 │   ├── main.js                    Bundled entry point
 │   ├── styles.css                 Extracted CSS
-│   └── *.js                       Page bundles and code-split chunks
+│   └── *-[hash].js                Page bundles and code-split chunks
+│
+├── dev/                           DEV build output — gitignored, served by http-server
+│                                  on :8080. Unhashed chunk names, sourcemaps, console
+│                                  calls intact. Disposable; delete it any time.
 │
 ├── .github/
 │   └── workflows/
@@ -52,7 +58,7 @@
 ├── rollup.config.dev.js           Dev build config (sourcemaps, no minification)
 ├── rollup.config.prod.js          Prod build config (minified, no console)
 ├── eslint.config.js               ESLint flat config
-├── .prettierignore                Excludes dist/ from Prettier formatting
+├── .prettierignore                Excludes dist/ and dev/ from Prettier formatting
 ├── package.json                   Dependencies, scripts, project metadata
 ├── webflow-snippet.html           Copy-paste snippet for Webflow head section
 ├── CLAUDE.md                      Project instructions for Claude
@@ -71,7 +77,7 @@
 | Page-specific bundle   | `src/pages/<name>.js` (use `npm run create-page`)             |
 | Nested page bundle     | `src/pages/<section>/<name>.js` (e.g., `blog/post.js`)        |
 | Project config         | `src/config.js`                                               |
-| CSS                    | Import in any JS file — extracts to `dist/styles.css`         |
+| CSS                    | Import in any JS file — extracts to `styles.css` in the build |
 | Node scripts           | `scripts/`                                                    |
 | Component stylesheets  | `src/components/styles/<name>.css` (import from the JS)        |
 | Component docs         | `.claude/rules/components/<name>.md`                          |

@@ -166,6 +166,10 @@ function initInteractive(section) {
         }
       }
 
+      const e0 = p.e,
+        x0 = p.x,
+        y0 = p.y
+
       p.e += (influence - p.e) * 0.12
 
       /* critically damped - settles instead of wobbling */
@@ -182,10 +186,20 @@ function initInteractive(section) {
         p.e *= 0.82
       }
 
-      if (p.e > 0.002 || Math.abs(p.vx) > 0.02 || Math.abs(p.vy) > 0.02)
+      /* What keeps the loop alive is the picture CHANGING, not the lattice
+         being deformed. Testing the magnitudes instead (p.e > 0.002) and
+         OR-ing in `live` meant a cursor resting anywhere inside the section
+         held p.e at a steady non-zero value with `active` still true - so
+         step() could never report idle, and frame() redrew an identical
+         lattice at full rate for as long as the pointer stayed put. */
+      if (
+        Math.abs(p.e - e0) > 0.002 ||
+        Math.abs(p.x - x0) > 0.02 ||
+        Math.abs(p.y - y0) > 0.02
+      )
         moving = true
     }
-    return moving || live
+    return moving
   }
 
   function line(a, b) {
