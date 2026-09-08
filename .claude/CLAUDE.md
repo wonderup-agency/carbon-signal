@@ -66,6 +66,7 @@ All docs in `.claude/rules/` directory:
 - Files/directories added, moved, or removed → `FILE_STRUCTURE.md`
 - Dependency added, replaced, or removed → `TECH_STACK.md`
 - New doc added to `.claude/rules/` → add it to the "Project Documentation" list above and this section
+- How a process works changes (deploy, release, scaffolding) → update the skill in `.claude/skills/` that performs it, not only the doc that describes it
 
 ## Skills
 
@@ -77,7 +78,7 @@ When a task matches one of these skills, **always use it** — don't run the ste
 - `/delete-component [name]` — Use when deleting a component. Removes the file, unregisters it, and deletes the doc.
 - `/delete-page [name]` — Use when deleting a page bundle. Removes the file and deletes the doc.
 - `/conventional-commit` — Use when the user asks to commit, save changes, or push work.
-- `/deploy` — Use when deploying to production. Runs build, commits dist/, and pushes to GitHub.
+- `/deploy` — Use when deploying to production. Builds, commits `dist/`, pushes, then hands off the Webflow pin (WUP Dev Extension) and republish. The push alone does not make a release live.
 - `/audit` — Use when checking project health. Finds orphan components, ghost registrations, missing/stale docs, and doc inaccuracies. Report only — doesn't fix anything.
 
 ### Webflow & Figma skills
