@@ -61,8 +61,6 @@
 ├── .prettierignore                Excludes dist/ and dev/ from Prettier formatting
 ├── package.json                   Dependencies, scripts, project metadata
 ├── webflow-snippet.html           Copy-paste snippet for Webflow head section
-├── CLAUDE.md                      Project instructions for Claude
-├── CHANGELOG.md                   Release notes
 └── README.md                      Project documentation
 ```
 

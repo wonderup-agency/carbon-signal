@@ -170,7 +170,10 @@ They sit there so the states render on the Designer canvas; CSS that ships in
 `dist/styles.css` never does. `bg-grid` splits the same way. The trade-off is
 that this stylesheet is outside version control — edit it in Webflow, and keep
 the variable contract in sync with this component by hand — the embed reads all
-four of `--pillar-collapsed-w`, `--pillar-open-w`, `--pillar-x` and `--pillars-h`.
+five of `--pillar-collapsed-w`, `--pillar-panel-w`, `--pillar-open-w`,
+`--pillar-x` and `--pillars-h`. `--pillar-panel-w` is easy to miss and the most
+load-bearing of the five: the JS never sets `width` or `transform` inline, so
+without it the open panel has no width.
 
 The embed also carries three things this component never reads, so they are CSS
 only: `.pillars_panel_title.is-two-line` clamps a title to two lines,
