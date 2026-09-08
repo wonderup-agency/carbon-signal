@@ -52,6 +52,23 @@ git push
 
 If any git command fails, stop and show the error.
 
-## Step 4 — Confirm
+## Step 4 — Confirm, and hand off the two manual steps
 
-Tell the user the build succeeded and the push is done. Remind them that jsDelivr serves from `@main` — the new assets will be live once jsDelivr's cache refreshes (can take a few minutes; use the jsDelivr purge API for immediate updates).
+The push is **not** the deploy. The live site keeps serving the previously pinned
+SHA until Webflow is repointed, so tell the user the build and push succeeded and
+that two steps remain — both outside this repo, both theirs to run:
+
+1. **Open the Webflow Designer and click the purple `↺` (WUP Dev Extension).**
+   It rewrites every jsDelivr `@{ref}` in the project — global custom code, every
+   page, CMS templates — to the SHA just pushed. Check the modal for any row that
+   reports `✗ failed`.
+2. **Publish the site.** Custom code changes only reach the live domain on
+   publish.
+
+Until step 1 runs, the site serves an old but coherent bundle — a safe stale
+state, not a broken one. Do not suggest pointing anything at `@main` as a
+shortcut: it is cached in visitors' browsers for up to 7 days, and hashed chunk
+names mean a stale `main.js` 404s on imports that no longer exist.
+
+CDN purging needs no action — `.github/workflows/purge-cdn.yml` runs on every
+push that touches `dist/`, and a freshly pinned SHA URL was never cached anyway.

@@ -145,9 +145,24 @@ Report only — Claude won't auto-fix anything without your approval. Run this p
 
 - Runs `npm run build` — lint → format → bundle → minify JS → extract and minify CSS
 - Commits `dist/` with a build commit
-- Pushes to `main` — jsDelivr serves from `@main` and propagates within minutes
+- Pushes to `main`
 
-A GitHub Actions workflow (`.github/workflows/purge-cdn.yml`) runs automatically after every push to `main` that touches `dist/`. It calls the jsDelivr purge API for every file in `dist/`, so CDN cache is cleared within seconds — no manual step needed.
+Then two manual steps, both in Webflow:
+
+1. In the Designer, click the purple `↺` (**WUP Dev Extension**). It rewrites every
+   jsDelivr `@{ref}` in the project — global custom code, every page, CMS templates
+   — to the commit SHA you just pushed.
+2. **Publish the site.** Custom code only reaches the live domain on publish.
+
+The live site must run on a pinned `@<sha>`, never `@main`: jsDelivr caches a
+mutable ref in visitors' browsers for up to 7 days, and because every build renames
+the hashed chunks, a stale `main.js` imports filenames that no longer exist and
+404s. The `@main` in `webflow-snippet.html` is just the placeholder the extension
+rewrites.
+
+Until step 1 runs, the site serves the previously pinned SHA — stale but coherent.
+
+A GitHub Actions workflow (`.github/workflows/purge-cdn.yml`) runs automatically after every push to `main` that touches `dist/`, calling the jsDelivr purge API for every file in `dist/`. With SHA pinning this is belt-and-braces — a new SHA URL was never cached — but it keeps anything still on `@main` (the Designer canvas, a block the extension missed) fresh.
 
 ---
 

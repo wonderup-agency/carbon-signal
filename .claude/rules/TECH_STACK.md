@@ -36,8 +36,20 @@
 ## CDN & Deployment
 
 - **jsDelivr** — serves production assets from GitHub via `cdn.jsdelivr.net/gh/owner/repo@version/dist/`
-- **Tagged releases are what the site actually uses** (`@v1.0.0`). Bump the tag every deploy and update the snippet in Webflow Project Settings.
-- `@main` must NOT be used in production. jsDelivr sends `max-age=604800`, so a mutable ref sits in visitors' browsers for up to 7 days; since each build renames the hashed chunks, a stale `main.js` imports filenames that no longer exist and 404s. Purging fixes the edge only — not a visitor's browser cache.
+- **A pinned commit SHA is what the site actually serves** (`@a1b2c3d`), written
+  into the Webflow project by the **WUP Dev Extension** after every deploy. It
+  rewrites every `@{ref}` — global custom code, all pages, CMS templates — to
+  `HEAD` of `main`. Republish the site afterwards; custom code only reaches the
+  live domain on publish.
+- `@main` must NOT be what the live site runs on. jsDelivr sends
+  `max-age=604800`, so a mutable ref sits in visitors' browsers for up to 7 days;
+  since each build renames the hashed chunks, a stale `main.js` imports filenames
+  that no longer exist and 404s. Purging fixes the edge only — not a visitor's
+  browser cache. `@main` appears in `webflow-snippet.html` purely as the
+  placeholder the extension rewrites.
+- **Extension limits that shape our conventions**: public repos only, `main`
+  only, Chrome only, and it does **not** scan Symbols/Components — so a jsDelivr
+  URL must never live inside a Webflow Component embed.
 
 ## Tunneling
 

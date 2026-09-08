@@ -82,6 +82,11 @@ Add to Webflow → Page Settings → Custom Code → Before </head>:
 console.log('%c📄 [name] Page loaded', 'color: #a78bfa; font-weight: bold')
 ```
 
+The `@main` in the generated snippet is a **placeholder**, same as in
+`webflow-snippet.html`. The WUP Dev Extension rewrites page-level `head`/`postBody`
+code too, so a pasted page snippet gets pinned to a SHA on the next deploy along
+with everything else — no manual URL swap. See TECH_STACK.md.
+
 The snippet uses the same dev/prod switcher pattern as the main site-wide snippet:
 
 - **Preload**: starts fetching the CDN bundle immediately (browser discards it in dev mode — harmless)

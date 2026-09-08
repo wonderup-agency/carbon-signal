@@ -113,10 +113,40 @@ prebuild: eslint src/ && prettier . --write
 ## Deployment Flow
 
 ```
-Local dev → build → commit dist/ → push to GitHub → tag the release → jsDelivr serves the tag
+Local dev → build → commit dist/ → push to GitHub → WUP Dev Extension pins Webflow to the new SHA → publish the site
 ```
 
-The Webflow site loads assets from an **immutable tagged release** on jsDelivr (`@v1.0.0`), not from `@main`. During local development the snippet in `webflow-snippet.html` points to `localhost:8080` with the pinned CDN URL as the production fallback.
+**The live site must always run on an immutable ref.** jsDelivr sends
+`max-age=604800`, so a mutable ref like `@main` sits in each visitor's browser
+cache for up to 7 days. Because every prod build renames the hashed chunks, a
+stale `main.js` imports chunk filenames that no longer exist and 404s — the
+component silently never loads. Purging jsDelivr fixes the edge but cannot clear
+a visitor's browser cache; only a new URL can.
 
-**Bump the tag on every deploy**, and update the snippet in Webflow Project Settings to match. This is not cosmetic: jsDelivr sends `max-age=604800`, so a mutable ref like `@main` sits in each visitor’s browser cache for up to 7 days. Because every build renames the hashed chunks, a stale `main.js` imports chunk filenames that no longer exist and 404s — the component silently never loads. Purging jsDelivr fixes the edge but cannot clear a visitor’s browser cache; only a new URL can. Pinning per release makes that class of bug impossible.
+That requirement used to be met by tagging each release and hand-editing the
+snippet. It is now met by the **WUP Dev Extension**, which reads `HEAD` of `main`
+from the GitHub API and rewrites every `@{ref}` in the Webflow project to that
+SHA — global custom code, every page, and CMS template pages. So the ref the site
+actually serves is `@<sha>`, which is immutable in exactly the way a tag was, and
+the coverage is wider: page bundles and CMS templates get pinned too, not just the
+global snippet.
+
+`webflow-snippet.html` therefore carries `@main` as a **placeholder**. It is the
+value you paste; the extension is what turns it into the value that ships. During
+local development the snippet points to `localhost:8080` with that CDN URL as the
+production fallback.
+
+Two consequences worth knowing:
+
+- **The push is not the deploy.** Until the extension runs, the site keeps serving
+  the previously pinned SHA. That is a safe failure — an old but coherent bundle,
+  not a broken one — which is the main reason this is an improvement on `@main`.
+  Webflow custom code only reaches the live domain on publish, so the site has to
+  be republished after the rewrite.
+- **Never put a jsDelivr URL inside a Webflow Component.** The extension scans
+  site-level custom code and page `head`/`postBody` only; a reference inside a
+  Symbol/Component embed is invisible to it and would silently stay on whatever
+  ref it was pasted with. This matters here because the project deliberately keeps
+  CSS in embeds inside the `Global / Styles` component — those are CSS-only, and
+  must stay that way.
 
