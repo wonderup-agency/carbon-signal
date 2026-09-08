@@ -55,11 +55,19 @@ It also initialises **smooth scroll** (`smooth-scroll.js`, wrapping Lenis). That
 
 It also carries `styles/base.css` — the only stylesheet left in the bundle. It hides the authoring-only Webflow Style Guide component, which is a specific need rather than component appearance, and it cannot move to a canvas embed because those embeds live inside the very component it hides.
 
-`pillars.css` used to live here, and is no longer in the bundle at all. It now lives in the **"Pillars CSS" embed** in the `Global / Styles` component on the Webflow canvas, so the accordion's open/closed states render in the Designer — CSS extracted into `dist/styles.css` never does. `bg-grid` splits the same way, for the same reason.
+`pillars.css` used to live here, and is no longer in the bundle at all. It now lives in the **"Pillars CSS" embed** in the `Global / Styles` component on the Webflow canvas, so the accordion's open/closed states render in the Designer — CSS extracted into `dist/styles.css` never does. `bg-grid`, `nav` and `light-block` split the same way, for the same reason.
+
+### The reverse direction: CSS that moved into JS
+
+`light-block` is the one case that went the other way. The scroll bleed was a pure CSS `view()` timeline, and its appearance still is — but the *driver* is now `light-block.js`, which publishes a `--light-bleed-p` scalar that the CUSTOM STYLES embed composes a `clip-path` from.
+
+The reason is browser support, not architecture: scroll-driven animations are Chrome 115+ and Safari 26+, with no Firefox support at all, so the `@supports (animation-timeline: view())` guard silently dropped the effect for a large share of visitors, who saw a static card. See `components/light-block.md`.
+
+Read it as a template for the shape rather than licence to move CSS into JS generally: what crossed the boundary was one number, and every length stayed on the canvas.
 
 ### Where a stylesheet belongs
 
-- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice) and `Pillars CSS` (accordion states).
+- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice), `Pillars CSS` (accordion states), `Nav CSS` (scrolled state) and the light-block bleed inside the shared `CUSTOM STYLES` embed.
 - **In the bundle** (`src/components/styles/`, imported from JS) — the narrower case: rules tied to a specific need rather than to a component's appearance — an initial/pre-hydration state, or a fix that must ship and version together with the JS depending on it.
 
 The cost of the default is that the CSS leaves version control, so keep the JS↔CSS contract (the custom properties each side reads and writes) documented in the component's doc.

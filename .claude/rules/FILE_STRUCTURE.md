@@ -8,6 +8,7 @@
 │   ├── components/
 │   │   ├── global.js              Runs on every page before components load
 │   │   ├── bg-grid.js             Background grid phasing, snapping, deformation
+│   │   ├── light-block.js         Light-block scroll bleed progress
 │   │   ├── nav.js                 Nav scroll-state flag
 │   │   ├── pillars.js             Possibilities-pillars accordion
 │   │   ├── slider.js              All sliders (Swiper), attribute-configured

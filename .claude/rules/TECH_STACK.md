@@ -68,13 +68,33 @@
 
 - **Lenis** (v1) — site-wide smooth scrolling via `smooth-scroll.js`. Chosen over
   wrapper-transform libraries because it drives the *real* scroll position, so
-  `position: sticky`, `IntersectionObserver` and CSS `view()` timelines keep
-  working — all of which this site uses. Skipped entirely under
+  `position: sticky`, `IntersectionObserver`, and anything reading
+  `window.scrollY` (`nav`, `bg-grid`, `light-block`) keep working — all of
+  which this site uses. Skipped entirely under
   `prefers-reduced-motion`, and `syncTouch` left off so native momentum
   scrolling survives on touch devices.
 - Unlike Swiper it is **not code-split**: it has no selector to trigger on, so it
   ships in the global chunk and loads on every page (~5.5KB gzipped, plus ~130
   bytes of its CSS).
+
+## Animation
+
+- **No animation library.** Motion is CSS transitions and keyframes on the
+  Webflow canvas, plus a small amount of JS that publishes scroll progress as a
+  custom property (`light-block`). `CLAUDE.md` registers GSAP skills and they
+  are kept deliberately — see below — but GSAP is **not** currently a
+  dependency, so don't assume `gsap` is importable.
+- **The criterion for adopting GSAP** is choreography, not one effect. It was
+  weighed and declined for `light-block`: core plus ScrollTrigger is ~46KB
+  gzipped against a 5.5KB global chunk, it cannot interpolate a `clip-path`
+  built from `var()`/`calc()` so it would end up animating a scalar custom
+  property regardless, and ScrollTrigger would need proxying onto Lenis for a
+  second source of truth about scroll position. See
+  `components/light-block.md`.
+- Pinning, sequenced multi-element reveals, SplitText or Flip would flip that
+  judgement — pay the bytes once and standardise rather than hand-rolling the
+  third one. GSAP is free for all plugins since v3.13, and Webflow's own
+  Interactions are GSAP-backed, so the cost is bytes and integration only.
 
 ## Dependencies
 

@@ -30,6 +30,15 @@ export default [
     selector: '[data-pillars]',
     importFn: () => import('./components/pillars.js'),
   },
+  // Registered on the .light-block class rather than a data-component
+  // attribute, because that class is already the contract: the CUSTOM STYLES
+  // rules are keyed off it, and the JS has to drive exactly the elements those
+  // rules match. Keying both off one selector means they cannot drift — a new
+  // light block anywhere on the site is animated by virtue of being styled.
+  {
+    selector: '.light-block',
+    importFn: () => import('./components/light-block.js'),
+  },
   // Every slider on the site, configured from data attributes. Registered on
   // data-slider rather than a data-component value so the same markup that
   // configures it also triggers it. Carries Swiper, so this chunk is the

@@ -69,6 +69,21 @@ phasing logic is inherently page-wide. Prefer `data-component` by default —
 reach for this only when a dedicated attribute would be redundant markup, and
 document the reason inline in the registry entry.
 
+### Registering on a class
+
+The narrower case, and so far only `light-block` with `.light-block`: when the
+JS has to drive **exactly** the set of elements a canvas stylesheet already
+matches, register on that same class rather than adding an attribute.
+
+The argument is drift, not brevity. A separate `data-component` value can be
+forgotten on a new instance, leaving an element styled but never animated —
+failing silently and only in the browsers that need the JS. Sharing one
+selector makes that impossible: being styled *is* being animated.
+
+Use it only when a class is genuinely the existing contract between JS and CSS.
+A class that merely happens to be on the right element is not a reason — prefer
+`data-component` there.
+
 ### Modules that are not registered at all
 
 A browser module with **no markup to match** does not belong in the registry.

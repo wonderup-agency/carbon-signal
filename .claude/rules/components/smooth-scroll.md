@@ -29,11 +29,18 @@ scroll position each frame, so everything native keeps working. That matters
 concretely here:
 
 - `.light-block_scroll_rive` is `position: sticky`
-- the light-block bleed in the **CUSTOM STYLES** embed runs on a `view()` timeline
 - `nav` reads `window.scrollY` on every scroll event
 - `bg-grid` phases rows from `getBoundingClientRect().top + window.scrollY`
+- `light-block` derives its bleed progress from `window.scrollY` and the
+  native `scroll` event
 
 A wrapper-based library would have broken all four.
+
+That last one used to be a CSS `view()` timeline, which made the same argument
+from the other end — a wrapper library freezes the real scroll position that a
+scroll-driven animation reads. It is now JS reading `window.scrollY` directly
+(see `light-block.md`), so the requirement is unchanged and, if anything,
+more direct: the component depends on `window.scrollY` being genuine.
 
 ## Behavior
 
