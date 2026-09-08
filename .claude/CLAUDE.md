@@ -80,6 +80,21 @@ When a task matches one of these skills, **always use it** — don't run the ste
 - `/deploy` — Use when deploying to production. Runs build, commits dist/, and pushes to GitHub.
 - `/audit` — Use when checking project health. Finds orphan components, ghost registrations, missing/stale docs, and doc inaccuracies. Report only — doesn't fix anything.
 
+### Webflow & Figma skills
+
+**Load `/webflow-build` before touching the Webflow MCP or Data API, not after.**
+The gotchas it documents cause silent failures that look like success, so a write
+issued without it may have to be undone by hand on the canvas.
+
+| Skill | Use when… |
+| ----- | --------- |
+| `/webflow-build` | Any Webflow site work — building pages or sections, creating or refactoring components, naming or reorganising classes, styling via variables, CMS collections, hover/focus/variant behaviour, custom code on the site, pre-launch QA. Trigger it even when the ask sounds trivial ("rename these classes", "why isn't this hover working"). |
+| `/figma-to-webflow-variables` | Migrating a Figma styleguide — colours, typography, spacing tokens — into this site's Webflow Variables. |
+
+Relevant here because this project deliberately keeps component CSS in embeds
+inside the `Global / Styles` component (see CONVENTIONS.md), so a fair amount of
+its styling work happens on the canvas rather than in `src/`.
+
 ### GSAP skills
 
 **This project uses GSAP for animation. Always invoke the correct skill before writing GSAP code.**
