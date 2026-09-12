@@ -75,6 +75,7 @@ element, still previews in the Designer, still lives in the asset manager.
 | `data-play-on-scroll` | — | the opt-in. `"true"` plays once; `"repeat"` replays on every entry |
 | `data-play-on-scroll-threshold` | `0.25` | fraction of the element that must be visible. Clamped to 0–1, since `IntersectionObserver` throws outside that |
 | `data-rive-animation` | — | play a named linear timeline instead of the state machine |
+| `data-rive-loop` | — | timeline to start once `data-rive-animation` ends |
 | `data-rive-trigger` | — | fire a named state-machine trigger input instead of `play()` |
 
 ### Three shapes of `.riv` file
@@ -105,6 +106,54 @@ artboard. The component therefore does `stop()` then `play(name)`.
 The name cannot be inferred. These files list `Loop` first and `Main Animation`
 second, and the second is the one you want — so the attribute is required
 rather than defaulted.
+
+#### The handoff to the idle loop
+
+Evicting the state machine has a second consequence, which only shows once the
+intro has played: whatever would have transitioned from the intro into the idle
+loop went with it. A file authored as "play once, then loop forever" stops dead
+on its last frame.
+
+`data-rive-loop` names the timeline to start when the intro ends. It hooks
+Rive's `stop` event, which the runtime fires when a non-looping timeline reaches
+its end.
+
+#### Timeline names are matched exactly
+
+Every name this component reads — `data-rive-animation`, `data-rive-loop`,
+`data-rive-trigger` — is passed to Rive as authored, so the attribute value has
+to match the name in the `.riv` character for character, casing included. A
+mismatch fails silently: `play()` is handed a name that does not exist and draws
+nothing.
+
+The project convention is therefore to name them in Rive so the Webflow side can
+stay lowercase — **`timeline`** for the intro and **`loop`** for the idle cycle:
+
+```
+data-rive-animation = timeline
+data-rive-loop      = loop
+```
+
+That is a convention held by hand in the Rive files, not enforced here. It was
+chosen over teaching this component to guess: one naming rule to follow beats a
+resolver that is right until someone names a timeline something else. If a file
+does use other names, the attributes still take them verbatim.
+
+Two ordering details keep that honest. The listener is registered **after** the
+component's own `stop()` call, so evicting the state machine is not itself
+mistaken for the intro finishing. And it is cancelled before any later `stop()`
+— otherwise a `"repeat"` element re-entering mid-intro would start the loop from
+the stale handler and the intro from the new `play()`, leaving both timelines
+fighting over the same properties.
+
+The handler removes itself on the way through, so a `data-rive-animation` that
+loops on its own — never firing `stop` — simply leaves nothing behind.
+
+This is the one place the component's behaviour depends on how the `.riv` was
+authored rather than on what Webflow did to it. A file whose state machine is
+properly wired needs none of it: the homepage hero loops on its own, because it
+is a different file with real states and is not opted into this component at
+all.
 
 **Trigger input — `data-rive-trigger`.** The machine is already running, parked
 in an idle state, waiting to be fired. `play()` does nothing visible. The

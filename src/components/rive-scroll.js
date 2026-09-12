@@ -49,6 +49,12 @@ function riveModule() {
   return window.Webflow?.require?.('rive')
 }
 
+/*
+Pending data-rive-loop handoffs, keyed by element. Kept outside start() so a
+replay can cancel the one it is superseding — see the handoff comment below.
+*/
+const pendingLoop = new WeakMap()
+
 function instanceFor(element) {
   return riveModule()?.getInstance?.(element)
 }
@@ -58,7 +64,8 @@ Three shapes of .riv file need three different starts. See the doc for how each
 one was diagnosed.
 
 - data-rive-animation names a linear timeline. Webflow always instantiates with
-  a state machine, so this path has to evict it first — see below.
+  a state machine, so this path has to evict it first — see below. Pair it with
+  data-rive-loop when the file is an intro followed by an idle loop.
 - data-rive-trigger names a state machine input. The machine is already running,
   parked in an idle state, waiting to be fired; play() would do nothing.
 - Neither: the machine runs from an entry state, so play() resumes what autoplay
@@ -88,7 +95,45 @@ function start(element) {
     Replaying is a real restart for the same reason — stop() drops the timeline
     instance, so the next play() begins at zero rather than resuming.
     */
+
+    /*
+    Cancel a handoff still waiting from a previous run before stopping, or that
+    stop() would be mistaken for the intro finishing: the handler would start
+    the loop, and the play() below would then start the intro alongside it,
+    leaving both timelines fighting over the same properties. Only reachable
+    with "repeat", when an element leaves and re-enters mid-intro.
+    */
+    const stale = pendingLoop.get(element)
+    if (stale) {
+      rive.off('stop', stale)
+      pendingLoop.delete(element)
+    }
+
     rive.stop()
+
+    /*
+    Evicting the state machine also removes whatever would have handed off from
+    the intro to the idle loop, so a file authored as "play once, then loop
+    forever" stops dead on its last frame. data-rive-loop names the timeline to
+    start when the intro ends.
+
+    Registered after stop() so our own call does not fire it, and it removes
+    itself on the way through, so a looping animation that never stops simply
+    leaves nothing behind.
+    */
+    const loop = element.dataset.riveLoop
+
+    if (loop) {
+      const handoff = () => {
+        rive.off('stop', handoff)
+        pendingLoop.delete(element)
+        rive.play(loop)
+      }
+
+      pendingLoop.set(element, handoff)
+      rive.on('stop', handoff)
+    }
+
     rive.play(animation)
     return
   }
