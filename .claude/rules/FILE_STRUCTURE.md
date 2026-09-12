@@ -11,6 +11,7 @@
 │   │   ├── light-block.js         Light-block scroll bleed progress
 │   │   ├── nav.js                 Nav scroll-state flag
 │   │   ├── pillars.js             Possibilities-pillars accordion
+│   │   ├── rive-scroll.js         Plays one Webflow Rive on scroll into view
 │   │   ├── slider.js              All sliders (Swiper), attribute-configured
 │   │   ├── smooth-scroll.js       Site-wide smooth scroll (Lenis) — not registered,
 │   │   │                          called directly from global.js

@@ -13,6 +13,15 @@
 // --------------------------------------------------
 
 export default [
+  // Registered on data-play-on-scroll rather than a data-component value
+  // because that attribute is both the opt-in and the config: it says which
+  // Rive elements are gated on visibility and whether each one replays. A
+  // second attribute to carry the same decision would be markup that can
+  // disagree with itself.
+  {
+    selector: '[data-play-on-scroll]',
+    importFn: () => import('./components/rive-scroll.js'),
+  },
   {
     selector: "[data-component='nav']",
     importFn: () => import('./components/nav.js'),
