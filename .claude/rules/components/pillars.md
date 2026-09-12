@@ -180,6 +180,27 @@ only: `.pillars_panel_title.is-two-line` clamps a title to two lines,
 `.pillars_panel_rail-tag.is-vertical` fixes the rotated tag's padding axes, and
 `.item-link` is the stretched link a panel may wrap.
 
+### The rail title needs `width`, not `max-width`
+
+A Designer-class property rather than an embed one, and easy to "tidy" back:
+`.pillars_panel_rail-title` must be **`width: 2.4em`**, not `max-width: 2.4em`.
+
+`.pillars_panel_rail` centres its children (`align-items: center`) and the rail
+tag beside it is a fixed `width: 2.4em`. Under `max-width` a one-line title
+collapses to roughly half that, so it gets centred as a narrower box and its
+text lands about `0.6em` off the axis a two-line title sits on — visible on
+Resources, where CMS titles vary in length, as rails that do not line up with
+each other.
+
+Fixing the width makes every rail child the same box. The two-line clamp is
+unaffected: in `vertical-rl` the block axis is horizontal, so `2.4em` is still
+exactly two lines at a 1.2 line-height, and the first line still starts at the
+block-start edge whether there is one line or two.
+
+`.pillars_panel_rail-tag.is-vertical` also carries a hand-typed
+`left: -0.65rem`, which predates this fix and may have been compensating for it
+by eye. Re-check it before trusting it.
+
 ## DOM Expectations
 
 Groups matching `[data-pillars]` containing at least two `[data-pillar]` panels;
