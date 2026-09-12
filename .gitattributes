@@ -1,0 +1,17 @@
+# Line endings
+#
+# Every line in a text file ends with an invisible marker, and Windows uses a
+# different one from macOS and Linux. Two tools here disagreed about which:
+# git checks files out with the Windows marker (core.autocrlf=true), while
+# Prettier — run by the prebuild hook before every production build — rewrites
+# them to the other one.
+#
+# The result was that `npm run build` left six files reported as modified with
+# a completely empty content diff. Harmless in itself, but it tripped the
+# deploy skill's uncommitted-changes guard on every release, and a working tree
+# that is always dirty for a known-fake reason is how a real change eventually
+# gets discarded along with the noise.
+#
+# text=auto lets git decide what is text and leave binaries alone; eol=lf makes
+# it check text out with the same marker Prettier writes, on every platform.
+* text=auto eol=lf

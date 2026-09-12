@@ -61,6 +61,8 @@
 ├── rollup.config.prod.js          Prod build config (minified, no console)
 ├── eslint.config.js               ESLint flat config
 ├── .prettierignore                Excludes dist/ and dev/ from Prettier formatting
+├── .gitattributes                 Checks every text file out with LF, so Prettier's
+│                                  output matches git and builds leave the tree clean
 ├── package.json                   Dependencies, scripts, project metadata
 ├── webflow-snippet.html           Copy-paste snippet for Webflow head section
 └── README.md                      Project documentation
