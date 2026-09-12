@@ -65,9 +65,13 @@ The reason is browser support, not architecture: scroll-driven animations are Ch
 
 Read it as a template for the shape rather than licence to move CSS into JS generally: what crossed the boundary was one number, and every length stayed on the canvas.
 
+`video-highlight` is the second instance of that same shape, and it is the one that shows why the shape is worth having. Its card is `[data-grid-snap]`, so its box *is* the grid geometry that `bg-grid` phases every section from — animating the card itself would change the section height on every scroll frame and re-run `growCards()`, `phaseRows()` and the canvas rebuild continuously. Publishing one scalar and letting the embed grow an *absolutely positioned* child instead means the layout that `bg-grid` measures never moves at all. See `components/video-highlight.md`.
+
+The two now carry duplicate copies of the same progress maths and bezier solve. That is recorded rather than hidden: extracting the shared driver is a known next change, deliberately kept out of the one that shipped the video card so a reveal already live on four pages was not refactored to deliver an unrelated section.
+
 ### Where a stylesheet belongs
 
-- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice), `Pillars CSS` (accordion states), `Nav CSS` (scrolled state) and the light-block bleed inside the shared `CUSTOM STYLES` embed.
+- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice), `Pillars CSS` (accordion states), `Nav CSS` (scrolled state), `Video Highlight CSS` (the video card's bleed geometry) and the light-block bleed inside the shared `CUSTOM STYLES` embed.
 - **In the bundle** (`src/components/styles/`, imported from JS) — the narrower case: rules tied to a specific need rather than to a component's appearance — an initial/pre-hydration state, or a fix that must ship and version together with the JS depending on it.
 
 The cost of the default is that the CSS leaves version control, so keep the JS↔CSS contract (the custom properties each side reads and writes) documented in the component's doc.

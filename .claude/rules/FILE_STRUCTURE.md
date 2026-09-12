@@ -13,6 +13,7 @@
 │   │   ├── pillars.js             Possibilities-pillars accordion
 │   │   ├── rive-scroll.js         Plays one Webflow Rive on scroll into view
 │   │   ├── slider.js              All sliders (Swiper), attribute-configured
+│   │   ├── video-highlight.js     Technology video card scroll bleed
 │   │   ├── smooth-scroll.js       Site-wide smooth scroll (Lenis) — not registered,
 │   │   │                          called directly from global.js
 │   │   └── styles/                Bundled stylesheets (imported from JS)

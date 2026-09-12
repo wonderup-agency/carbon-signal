@@ -48,6 +48,14 @@ export default [
     selector: '.light-block',
     importFn: () => import('./components/light-block.js'),
   },
+  // The Technology video card's scroll bleed. Unlike light-block this one does
+  // take a data-component attribute: the card lives inside the Section / Video
+  // Highlight component, so the attribute and the class it is styled by travel
+  // together by construction and cannot drift the way hand-placed markup can.
+  {
+    selector: "[data-component='video-highlight']",
+    importFn: () => import('./components/video-highlight.js'),
+  },
   // Every slider on the site, configured from data attributes. Registered on
   // data-slider rather than a data-component value so the same markup that
   // configures it also triggers it. Carries Swiper, so this chunk is the
