@@ -152,7 +152,8 @@ Read this section before any MCP write. These are confirmed behaviors, not theor
 
 **Hard limits — don't try to work around these**
 - Element operations are scoped to the **current active page**. There is no cross-page copy and no page duplication. Rebuilding a page's section tree element-by-element loses styles, interactions, CMS bindings, and component identity. Say so and hand the copy/paste step back to the human.
-- HtmlEmbed inner content (your custom CSS/JS payloads) **cannot be read or written** via MCP. Attributes and styles yes, embed contents no. Those edits are Designer-manual — write the CSS out for the human to paste.
+- HtmlEmbed inner content (your custom CSS/JS payloads) **can** be read and written, via `data_element_settings_tool` with `key: "code"` — `get_settings` to read, `set_settings` + `static_text` to write. Embeds inside a component need `scope_component_id`, and won't show up in a page-level `query_elements` without it. (This bullet previously said the opposite; verified working on Carbon Signal's `Global / Styles` embeds.)
+- **Writing an embed is a full-content resend**, same risk shape as CMS `update`: you send the whole payload, so a transcription slip silently destroys the rest of the stylesheet. Save the current content to a local file first, apply the edit there, `diff` to confirm only the intended hunk moved, then send — and read back and compare afterwards. The published page's compiled `<style>` block is a good byte-accurate source for that baseline.
 - CMS `update` via MCP requires resending the **entire** field, with no diff. For large rich-text bodies containing exact data, that's a corruption risk.
 
 **When to drop to the Data API instead**

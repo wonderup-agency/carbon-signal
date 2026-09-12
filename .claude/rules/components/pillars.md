@@ -201,6 +201,12 @@ block-start edge whether there is one line or two.
 `left: -0.65rem`, which predates this fix and may have been compensating for it
 by eye. Re-check it before trusting it.
 
+The embed's own comment above `.pillars_panel_rail-title` carries the same
+reasoning, so the two should be changed together. Embed contents **are**
+reachable over MCP — `data_element_settings_tool`, `key: "code"`, with
+`scope_component_id` set to the `Global / Styles` component — but writing one
+resends the whole payload, so diff a local copy before and after.
+
 ## DOM Expectations
 
 Groups matching `[data-pillars]` containing at least two `[data-pillar]` panels;
