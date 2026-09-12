@@ -192,10 +192,25 @@ text lands about `0.6em` off the axis a two-line title sits on — visible on
 Resources, where CMS titles vary in length, as rails that do not line up with
 each other.
 
-Fixing the width makes every rail child the same box. The two-line clamp is
+Fixing the width makes every rail child the same box. The two-line cut is
 unaffected: in `vertical-rl` the block axis is horizontal, so `2.4em` is still
 exactly two lines at a 1.2 line-height, and the first line still starts at the
 block-start edge whether there is one line or two.
+
+### No `-webkit-line-clamp` on the rail title, ever
+
+The embed used to add `display: -webkit-box` / `-webkit-box-orient: vertical` /
+`-webkit-line-clamp: 2` for an ellipsis. **Safari's legacy `-webkit-box` does
+not honour `writing-mode`**: it laid the title out horizontally, and the
+`transform: rotate(180deg)` then turned that upside down, so the Possibilities
+rails rendered as two lines of inverted text sitting at the foot of the panel.
+Chrome honours it, which is why it shipped.
+
+The original comment called the ellipsis "a bonus on top of the width, where it
+is unsupported the title still stops at exactly two lines" — the wrong model.
+It is not unsupported in Safari; it actively overrides the writing mode and
+breaks the layout. `width: 2.4em` plus `overflow: hidden` already gives the
+hard two-line cut, so the properties were removed and only the dots were lost.
 
 `.pillars_panel_rail-tag.is-vertical` also carries a hand-typed
 `left: -0.65rem`, which predates this fix and may have been compensating for it
