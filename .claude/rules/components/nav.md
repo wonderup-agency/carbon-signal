@@ -42,25 +42,30 @@ A Designer-class property rather than an embed one, so it is easy to lose to a
 `position: fixed` makes it a stacking context but does not lift it out of the
 `z-index: auto` paint group, so *any* page content with `z-index: 1` or higher
 paints over it — and hit testing follows paint order, so those boxes swallow the
-taps. It shipped without one, and the symptom was the nav going dead at the top
-of `/technology`, `/about` and `/connect`: the hamburger sat under
+taps. It shipped without one, which put the nav under both
 `.center-section_gradients-wrapper` (`z-index: 1`, `inset: 0%`, covering the
-whole hero including the strip behind the nav bar), and the open mobile menu sat
-under the hero's `.padding-global.z-index-2`. Scrolling past the hero moved both
-boxes off the nav's rectangle and everything started working again, which is
-what made it look like a performance problem rather than a stacking one.
+whole hero including the strip behind the nav bar) and every
+`.padding-global.z-index-2` content block.
 
-Two consequences worth holding on to:
+`.center-section_gradients-wrapper` was given `pointer-events: none` at the same
+time. Its decorative blob children always had it; the wrapper did not, so it
+ate taps across the entire hero.
 
-- **The children ride along.** `.nav_menu` is `position: absolute` inside the
-  nav and `.nav_dropdown_panel` is `z-index: 1` inside it — both are capped by
-  the nav's own stacking context, so raising the nav is the whole fix. Raising
-  them individually would not have worked.
-- **`.center-section_gradients-wrapper` also carries `pointer-events: none`**
-  for the same bug. Its decorative blob children (`.center-section_blur-gradient`,
-  `.center-section_blur-dark-gradient`) always had it; the wrapper did not, so
-  it ate taps across the entire hero. Both halves are needed — the wrapper is
-  the only reason the *closed* nav was unreachable.
+**Neither change fixed the bug they were found while chasing**, and that is the
+part worth remembering. The reported symptom — the nav unusable at the top of
+`/technology` and `/connect`, fine once scrolled past the hero — turned out to
+be paint cost, not stacking: four `filter: blur()` blobs inside that same
+wrapper, up to a 115px radius on boxes wider than the screen, with the radii
+never reduced at any mobile breakpoint. Two plausible stacking defects sat
+directly on the path to the real cause and matched the symptom well enough to
+be mistaken for it twice. Measure before concluding; a mechanism that explains
+the symptom is not evidence that it caused it.
+
+The z-index is still required — it is a real latent defect, just a silent one.
+Note the children ride along: `.nav_menu` is `position: absolute` inside the nav
+and `.nav_dropdown_panel` is `z-index: 1` inside it, so both are capped by the
+nav's own stacking context. Raising the nav is the whole fix; raising them
+individually would not have worked.
 
 ## DOM Expectations
 
