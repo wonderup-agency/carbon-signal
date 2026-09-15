@@ -10,8 +10,13 @@
 │   │   ├── bg-grid.js             Background grid phasing, snapping, deformation
 │   │   ├── light-block.js         Light-block scroll bleed progress
 │   │   ├── nav.js                 Nav scroll-state flag
+│   │   ├── parallax.js            Section background-image scroll drift
 │   │   ├── pillars.js             Possibilities-pillars accordion
 │   │   ├── rive-scroll.js         Plays one Webflow Rive on scroll into view
+│   │   ├── scroll-progress.js     Shared scroll-progress driver — not registered,
+│   │   │                          imported by light-block, video-highlight, parallax
+│   │   ├── section-tags.js        Tag row above a section's steps — marks the step
+│   │   │                          crossing the viewport midline
 │   │   ├── slider.js              All sliders (Swiper), attribute-configured
 │   │   ├── video-highlight.js     Technology video card scroll bleed
 │   │   ├── smooth-scroll.js       Site-wide smooth scroll (Lenis) — not registered,

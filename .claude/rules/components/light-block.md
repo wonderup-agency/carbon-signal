@@ -20,16 +20,22 @@ not the design. The client asked for the effect everywhere.
 
 ### Why not GSAP
 
-ScrollTrigger plus GSAP core is ~46KB gzipped, against 5.5KB for the entire
-current global chunk, to produce one number per frame per element. Three
-specific reasons beyond the size:
+Note the size argument that used to lead this section was wrong: Webflow loads
+GSAP 3.15.0 and ScrollTrigger on **every page of this site** for IX3, so
+`window.gsap` is already there and costs nothing extra. See TECH_STACK.md.
 
+The reasons that actually decide it:
+
+- **It would pull the geometry off the canvas.** The lengths live in the CUSTOM
+  STYLES embed so the resting card renders in the Designer. A tween driving
+  `clip-path` from JS moves them into the bundle, where the Designer cannot show
+  them — the trade this whole project is built to avoid.
 - **It could not interpolate the property anyway.** The keyframes ran from
   `inset(var(--light-bleed-y) var(--light-gap-x) round var(--light-bleed-radius))`
   to `inset(0px 0px round 0px)`, and `--light-gap-x` is itself a `calc()` on
   `100vw`. GSAP's string interpolation needs resolved numbers of matching
   structure, so it would have had to animate a scalar custom property — which
-  is what this file does directly.
+  is what `scroll-progress.js` does.
 - **It would contend with Lenis for scroll.** Lenis already owns the real
   scroll position; ScrollTrigger would need `scrollerProxy` wiring and a second
   source of truth.
@@ -38,7 +44,9 @@ specific reasons beyond the size:
 
 GSAP remains the right call if this site later grows real scroll
 choreography — pinning, sequenced multi-element reveals, SplitText. It is not
-the right call for one scalar.
+the right call for one scalar. When that day comes, use the `window.gsap`
+Webflow already ships rather than adding the npm package, which would put a
+second copy on every page.
 
 ## Webflow Setup
 
@@ -85,52 +93,29 @@ by hand. It is the only shared name.
 
 - **Init**: Caches each block's page-relative `top` and `height`, paints once
   so a refresh partway down the page starts correct, then listens for scroll.
+  All of it via `scroll-progress.js`.
 - **Resize**: Re-measures. This hook is load-bearing rather than an
   optimisation — viewport height is part of the progress calculation, and a
   height-only window resize does not change the body's box, so the
-  `ResizeObserver` below will not always catch it.
+  `ResizeObserver` will not catch it.
 - **Breakpoint**: Not used. The effect runs at every width, as the CSS did.
 
-### Progress, and why it is not measured per frame
+### Progress, timing and easing live in the driver
 
-Progress replicates a `view()` timeline's default `cover` range: 0 when the
-block's top edge sits at the bottom of the viewport, 1 once its bottom edge has
-passed the top.
+The cover-range maths, the cached measurement, the rAF-coalesced scroll loop and
+the `10 / 42 / 58 / 90` ease-in-out curve are all in `scroll-progress.js`, which
+this component is two lines of configuration on top of. See
+`components/scroll-progress.md` for the mechanism and for why the bezier is
+solved rather than approximated.
 
-```
-position = (viewportHeight - top) / (viewportHeight + blockHeight)
-```
+The curve is `revealProgress`, shared with `video-highlight`, and shared on
+purpose: a second reveal on the same site easing on a different schedule would
+read as a bug rather than as a variation. Moving the timing moves both.
 
-`top` comes from the cached page offset minus the current scroll, not from a
-fresh `getBoundingClientRect()`, so the per-frame path does no layout reads at
-all. Measurement is confined to init, resize, a `ResizeObserver` on
-`document.body`, `document.fonts.ready` and `window.load`.
-
-The observer watches the body rather than the blocks because a block's *page
-position* is changed by anything above it, not only by its own height — the same
-reasoning as `bg-grid`.
-
-Writes are skipped when `p` moves less than 0.0005, so a block parked outside
-the range stops re-setting the same 0 every frame.
-
-### The easing is the real curve, not an approximation
-
-The keyframes carried `ease-in-out`, i.e. `cubic-bezier(0.42, 0, 0.58, 1)`,
-applied to each keyframe interval. Chrome and Safari 26 have been running the
-CSS version in production, so eyeballing the curve would have been a visible
-regression for most of the traffic.
-
-`easeInOut` therefore inverts the bezier's x component with Newton-Raphson and
-reads off y. Worth knowing why a smoothstep will not do: the y component of
-this curve *is* `3t² − 2t³` in the curve's own parameter, but the x mapping is
-not the identity, so `smoothstep(x)` is a different function of progress.
-
-Verified against an independent bisection solve of the same curve: max error
-1.7e-5, about a thousandth of a pixel on the 64px vertical inset.
-
-### Timing
-
-Positions through the viewport, with an ease-in-out on each ramp:
+**These are the values that shipped.** The embed's prose comment described
+`20 / 42 / 58 / 80` and had drifted from its own keyframes, which were
+`0–10 / 42–58 / 90–100`. The code was the source of truth, since that is what
+was signed off visually; the comment has been corrected.
 
 | Position | State |
 | --- | --- |
@@ -139,14 +124,6 @@ Positions through the viewport, with an ease-in-out on each ramp:
 | 42–58 | holds fully bled through the middle |
 | 58–90 | shrinks back to a card |
 | 90–100 | nothing happens, the block is leaving |
-
-These are `growStart` / `growEnd` / `shrinkStart` / `shrinkEnd` in the module.
-10 and 90 mirror, so moving them together keeps entry and exit symmetric.
-
-**These are the values that shipped.** The embed's prose comment described
-`20 / 42 / 58 / 80` and had drifted from its own keyframes, which were
-`0–10 / 42–58 / 90–100`. The code was the source of truth, since that is what
-was signed off visually; the comment has been corrected.
 
 ### Reduced motion
 
@@ -157,18 +134,14 @@ by scrolling, exactly what the setting exists to turn off.
 
 ### Not coupled to smooth scroll
 
-Reads `window.scrollY` and listens to the native `scroll` event rather than
-calling `lenis.on('scroll')`. Lenis sets the genuine scroll position every
-frame, so native scroll events fire and `window.scrollY` is accurate — which
-means the effect behaves identically with smooth scroll on, off, or absent, and
-the component carries no dependency on `global.js` having run first.
-
-Scroll events are coalesced through one `requestAnimationFrame`, so several
-events landing in a frame do one paint.
+Inherited from `scroll-progress.js`, which reads `window.scrollY` and the native
+`scroll` event rather than `lenis.on('scroll')`. See that doc.
 
 ## Dependencies
 
-None in the bundle. No stylesheet import — the rules live in the **"CUSTOM
+- `./scroll-progress.js` — the whole of the measurement, scheduling and easing.
+
+No stylesheet import — the rules live in the **"CUSTOM
 STYLES" embed** inside the `Global / Styles` component on the Webflow canvas
 (element `d59e009d-e031-8f66-15a2-1323f5cc88c6`), under
 `LIGHT BLOCK SCROLL BLEED`.

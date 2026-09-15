@@ -81,16 +81,39 @@
 
 - **No animation library.** Motion is CSS transitions and keyframes on the
   Webflow canvas, plus a small amount of JS that publishes scroll progress as a
-  custom property (`light-block`). `CLAUDE.md` registers GSAP skills and they
+  custom property. Three components do that — `light-block`, `video-highlight`
+  and `parallax` — over one shared driver, `src/components/scroll-progress.js`.
+  Adding a fourth scroll-driven effect should mean a new `map` function and a
+  new canvas embed, not a new scroll loop. `CLAUDE.md` registers GSAP skills and they
   are kept deliberately — see below — but GSAP is **not** currently a
   dependency, so don't assume `gsap` is importable.
-- **The criterion for adopting GSAP** is choreography, not one effect. It was
-  weighed and declined for `light-block`: core plus ScrollTrigger is ~46KB
-  gzipped against a 5.5KB global chunk, it cannot interpolate a `clip-path`
-  built from `var()`/`calc()` so it would end up animating a scalar custom
-  property regardless, and ScrollTrigger would need proxying onto Lenis for a
-  second source of truth about scroll position. See
-  `components/light-block.md`.
+- **Webflow already loads GSAP 3.15.0 and ScrollTrigger on every page**, from
+  `cdn.prod.website-files.com/gsap/3.15.0/`, because the site uses IX3 and
+  Webflow's Interactions are GSAP-backed. Verified across all six pages.
+  `window.gsap` and `window.ScrollTrigger` are therefore available at runtime
+  today, with no npm dependency and no added bytes. **Earlier versions of this
+  doc argued against GSAP on a ~46KB cost. That number was wrong for this
+  site** — the bytes are already being paid.
+- **The criterion for adopting GSAP** is choreography, not one effect, and the
+  real cost here is architectural rather than bytes. It was weighed and
+  declined for `light-block`: core plus ScrollTrigger is ~46KB
+  it cannot interpolate a `clip-path` built from `var()`/`calc()` so it would
+  end up animating a scalar custom property regardless, and ScrollTrigger would
+  need proxying onto Lenis for a second source of truth about scroll position.
+  See `components/light-block.md`. Both of those still hold; only the size
+  argument does not.
+- **The deciding reason is the Designer, not the download.** This project keeps
+  component appearance in canvas embeds so it renders while you author (see
+  CONVENTIONS.md). A GSAP tween driving `transform` or `clip-path` from JS pulls
+  that geometry off the canvas and into the bundle, where the Designer cannot
+  show it. Publishing a scalar and letting an embed compose from it is what
+  preserves the property — and that trade is unaffected by GSAP being free.
+- **Because it is free, the bar for a future effect is lower than it looks.**
+  For motion that does *not* need to render in the Designer — pinning, a
+  sequenced multi-element reveal, SplitText, Flip — reach for the global
+  `window.gsap` rather than extending `scroll-progress.js` past the one shape it
+  is good at. Do not add the npm package for it; that would ship a second copy
+  alongside Webflow's.
 - Pinning, sequenced multi-element reveals, SplitText or Flip would flip that
   judgement — pay the bytes once and standardise rather than hand-rolling the
   third one. GSAP is free for all plugins since v3.13, and Webflow's own

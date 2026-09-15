@@ -13,6 +13,14 @@
 // --------------------------------------------------
 
 export default [
+  // The tag row above a section's steps. Registered on data-section-tags
+  // rather than a data-component value for the same reason as bg-grid and
+  // slider: that attribute is both the opt-in and the selector the Section
+  // Tags CSS embed keys off, so a row is either wired and styled or neither.
+  {
+    selector: '[data-section-tags]',
+    importFn: () => import('./components/section-tags.js'),
+  },
   // Registered on data-play-on-scroll rather than a data-component value
   // because that attribute is both the opt-in and the config: it says which
   // Rive elements are gated on visibility and whether each one replays. A
@@ -55,6 +63,16 @@ export default [
   {
     selector: "[data-component='video-highlight']",
     importFn: () => import('./components/video-highlight.js'),
+  },
+  // The section background-image parallax. Registered on data-parallax rather
+  // than the .section_bg-image-wrapper class it sits on: every bg-image section
+  // shares that class, but not every one should drift, and the strength is not
+  // uniform. The attribute is both the opt-in and the selector the Parallax CSS
+  // embed keys off, so a section is either animated and styled for it or
+  // neither — the same no-drift property light-block gets from its class.
+  {
+    selector: '[data-parallax]',
+    importFn: () => import('./components/parallax.js'),
   },
   // Every slider on the site, configured from data attributes. Registered on
   // data-slider rather than a data-component value so the same markup that

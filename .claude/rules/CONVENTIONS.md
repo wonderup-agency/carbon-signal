@@ -84,6 +84,47 @@ Use it only when a class is genuinely the existing contract between JS and CSS.
 A class that merely happens to be on the right element is not a reason — prefer
 `data-component` there.
 
+### When a shared class cannot be the opt-in
+
+`parallax` is the inverse of that case and worth keeping distinct. Every
+background-image section shares `.section_bg-image-wrapper`, but only some
+should drift and the strength varies, so the class cannot carry the decision —
+`data-parallax` does.
+
+The no-drift property is preserved by making the **stylesheet key off the same
+attribute**: the Parallax CSS embed matches `[data-parallax] .section_bg-image`,
+never `.section_bg-image` alone. A section is therefore animated and styled for
+it, or neither. Hold that rule whenever an attribute opts a subset of a shared
+class into an effect — if the CSS keys off the class instead, the attribute
+becomes forgettable and the failure is silent.
+
+### When one shared class serves two sections
+
+`section-tags` is the case where the markup is shared but only one instance of
+it is scripted. `.section-tags_*` are the resources filter's own classes,
+renamed when the homepage needed the same pills — one design, one set of rules,
+generic names so a third section can use them.
+
+Two rules make that safe:
+
+- **The attribute marks the scripted row, not the styled one.**
+  `data-section-tags` is on the homepage row only. The resources row is styled
+  identically and has no JS, and must not get the attribute.
+- **Anything state-like is scoped to it.** The active dot is written
+  `[data-section-tags] .section-tags_pill::before`, so it cannot appear on the
+  filter row — which has its own unrelated active state (`.is-filter-active`,
+  written by Finsweet). Two notions of "active" on one class is fine as long as
+  neither selector can reach the other's row.
+
+Per-section differences go on **combos**, never into the base class:
+`.is-steps` makes the homepage row sticky and hides it tablet-down; `.is-filled`
+gives its pills a background. The base class stays what both rows share.
+
+Note the limit of the sharing. The pills look identical but are not
+interchangeable elements — the filter's is a `<label>` wrapping a checkbox that
+Finsweet binds to, the homepage's is an `<a>`. The class is shared; the element
+is not, and no variant should try to unify them.
+
 ### Modules that are not registered at all
 
 A browser module with **no markup to match** does not belong in the registry.
@@ -91,9 +132,15 @@ A browser module with **no markup to match** does not belong in the registry.
 imports and calls it directly. It still lives in `src/components/` — that is
 where browser modules go — and still gets a doc under `.claude/rules/components/`.
 
+`scroll-progress.js` is the second case, and a cheaper one: it is a helper the
+components import, not something anything calls on its own. Nothing runs it at
+import time, so Rollup emits it as a shared chunk behind the components that
+import it — a page with no scroll effect never requests it.
+
 Reach for this only when there is genuinely no selector. The registry exists so
-code loads only on pages that need it, and stepping outside it means the module
-ships in the global chunk on every page; say so in its doc, with the cost.
+code loads only on pages that need it. Stepping outside it costs nothing for a
+pure helper like `scroll-progress.js`, but a module `global.js` *calls* ships in
+the global chunk on every page — say so in its doc, with the cost.
 
 ## CSS
 

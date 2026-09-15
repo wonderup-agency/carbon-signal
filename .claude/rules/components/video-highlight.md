@@ -57,7 +57,8 @@ by hand. It is the only shared name.
 ## Behavior
 
 - **Init**: Caches each card's page-relative `top` and `height`, paints once so
-  a refresh partway down the page starts correct, then listens for scroll.
+  a refresh partway down the page starts correct, then listens for scroll. All
+  of it via `scroll-progress.js`.
 - **Resize**: Re-measures. Load-bearing rather than an optimisation — viewport
   height is part of the progress calculation, and a height-only window resize
   does not change the body's box, so the `ResizeObserver` will not catch it.
@@ -108,28 +109,16 @@ drifting off to the left, out of its frame, while the frame sits empty.
 The embed overrides it. Do not remove that line, and expect the same trap on any
 other effect that grows a Webflow link element with insets.
 
-### Progress, and why it is not measured per frame
+### Progress and timing live in the driver
 
-Progress replicates a `view()` timeline's default `cover` range: 0 when the
-card's top edge sits at the bottom of the viewport, 1 once its bottom edge has
-passed the top.
+The cover-range maths, the cached measurement and the rAF-coalesced scroll loop
+are all in `scroll-progress.js` — see `components/scroll-progress.md`.
 
-```
-position = (viewportHeight - top) / (viewportHeight + cardHeight)
-```
-
-`top` comes from the cached page offset minus the current scroll, not from a
-fresh `getBoundingClientRect()`, so the per-frame path does no layout reads.
-Measurement is confined to init, resize, a `ResizeObserver` on `document.body`,
-`document.fonts.ready` and `window.load`.
-
-Writes are skipped when `p` moves less than 0.0005.
-
-### Timing
-
-The same four positions as `light-block`, on purpose — a second reveal on the
-same site easing on a different schedule would read as a bug rather than as a
-variation.
+The curve is `revealProgress`, the *same function* `light-block` uses rather
+than a second copy of the same numbers. That is the point of holding it there: a
+second reveal on the same site easing on a different schedule would read as a
+bug rather than as a variation, and now it cannot happen. Moving the timing
+moves both.
 
 | Position | State |
 | --- | --- |
@@ -221,24 +210,13 @@ longer than five seconds. Adding one is a design change, not a code fix.
 
 ### Not coupled to smooth scroll
 
-Reads `window.scrollY` and listens to the native `scroll` event rather than
-`lenis.on('scroll')`, same as `light-block` — Lenis sets the genuine scroll
-position every frame, so the effect behaves identically with smooth scroll on,
-off, or absent. Scroll events are coalesced through one `requestAnimationFrame`.
-
-## Duplication with light-block, and why it was left
-
-The progress maths, the cubic-bezier solve and the rAF-coalesced scroll loop in
-this file are a second copy of `light-block.js`. That is known, not an oversight.
-
-Extracting the shared driver is the obvious next change. It was left out of the
-one that shipped this section so that an effect already live on four pages was
-not refactored in order to deliver an unrelated card. Do it as its own change,
-and verify `light-block` against its own doc afterwards.
+Inherited from `scroll-progress.js`, same as `light-block`. See that doc.
 
 ## Dependencies
 
-None in the bundle. No stylesheet import — the rules live in the **"Video
+- `./scroll-progress.js` — the whole of the measurement, scheduling and easing.
+
+No stylesheet import — the rules live in the **"Video
 Highlight CSS" embed** inside the `Global / Styles` component on the Webflow
 canvas (element `d352dd95-91dd-2847-15a0-79b9c5a5ad0f`).
 

@@ -53,6 +53,8 @@ Loaded before any components. Runs on every page regardless of data attributes. 
 
 It also initialises **smooth scroll** (`smooth-scroll.js`, wrapping Lenis). That module is not in the registry: it has no markup to match a selector against, so `global.js` calls it directly. The trade-off is that it ships in the global chunk and therefore loads on every page — about 5.5KB gzipped — where everything else heavy in this project is code-split behind a selector. See `components/smooth-scroll.md`.
 
+It does **not** carry `scroll-progress.js`, despite that also being an unregistered module. Unlike `smooth-scroll.js` nothing calls it at import time, so Rollup emits it as a shared chunk behind the components that import it — a page with no scroll effect never requests it.
+
 It also carries `styles/base.css` — the only stylesheet left in the bundle. It hides the authoring-only Webflow Style Guide component, which is a specific need rather than component appearance, and it cannot move to a canvas embed because those embeds live inside the very component it hides.
 
 `pillars.css` used to live here, and is no longer in the bundle at all. It now lives in the **"Pillars CSS" embed** in the `Global / Styles` component on the Webflow canvas, so the accordion's open/closed states render in the Designer — CSS extracted into `dist/styles.css` never does. `bg-grid`, `nav` and `light-block` split the same way, for the same reason.
@@ -67,11 +69,13 @@ Read it as a template for the shape rather than licence to move CSS into JS gene
 
 `video-highlight` is the second instance of that same shape, and it is the one that shows why the shape is worth having. Its card is `[data-grid-snap]`, so its box *is* the grid geometry that `bg-grid` phases every section from — animating the card itself would change the section height on every scroll frame and re-run `growCards()`, `phaseRows()` and the canvas rebuild continuously. Publishing one scalar and letting the embed grow an *absolutely positioned* child instead means the layout that `bg-grid` measures never moves at all. See `components/video-highlight.md`.
 
-The two now carry duplicate copies of the same progress maths and bezier solve. That is recorded rather than hidden: extracting the shared driver is a known next change, deliberately kept out of the one that shipped the video card so a reveal already live on four pages was not refactored to deliver an unrelated section.
+`parallax` is the third, and it is the one that forced the shared driver out into the open. All three are now a few lines of configuration over `scroll-progress.js`, which owns the cover-range maths, the cached measurement, the rAF-coalesced scroll loop, the remeasure hooks and — for the two reveals — the bezier curve. See `components/scroll-progress.md`.
+
+The rule that module imposes on its callers is worth stating here rather than only there: **whatever the published property moves must not be able to resize its own containing block.** The driver re-measures on any `document.body` height change, so an in-flow target would re-measure itself every frame and drag `bg-grid` along with it. All three callers move an absolutely positioned element, which is why none of them wakes the grid.
 
 ### Where a stylesheet belongs
 
-- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice), `Pillars CSS` (accordion states), `Nav CSS` (scrolled state), `Video Highlight CSS` (the video card's bleed geometry) and the light-block bleed inside the shared `CUSTOM STYLES` embed.
+- **In a Webflow canvas embed under `Global / Styles`** — the default for custom and component CSS. Bundled CSS does not render in the Designer, so anything shaping a component's appearance or states has to live on the canvas to be authorable. Currently `BG Grid` (static lattice), `Pillars CSS` (accordion states), `Nav CSS` (scrolled state), `Video Highlight CSS` (the video card's bleed geometry), `Parallax CSS` (the background-image drift), `Section Tags CSS` (the pill row shared by the resources filters and the homepage step tags — its separators and its active dot) and the light-block bleed inside the shared `CUSTOM STYLES` embed.
 - **In the bundle** (`src/components/styles/`, imported from JS) — the narrower case: rules tied to a specific need rather than to a component's appearance — an initial/pre-hydration state, or a fix that must ship and version together with the JS depending on it.
 
 The cost of the default is that the CSS leaves version control, so keep the JS↔CSS contract (the custom properties each side reads and writes) documented in the component's doc.
