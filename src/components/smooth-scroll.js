@@ -59,20 +59,40 @@ export default function initSmoothScroll() {
   links added later are covered without re-binding.
 
   data-lenis-prevent on a link opts it back out to native behaviour.
+
+  THE LISTENER IS IN THE CAPTURE PHASE, AND THAT IS LOAD-BEARING
+  Webflow ships its own anchor scroller. Its scroll module delegates on
+  a[href*="#"]:not(.w-tab-link):not(a[href="#"]) and drives window.scroll() from
+  its own rAF loop — and it never checks defaultPrevented, so calling
+  preventDefault() in a bubble-phase listener does not stop it. Both animations
+  then run at once and fight over the scroll position, which reads as the page
+  snapping partway through the ease. Which one wins depends on bind order, so
+  the symptom comes and goes.
+
+  A capture listener on document runs before any delegated bubble handler, so
+  stopPropagation() here means Webflow's never fires. The cost is that other
+  click handlers on in-page links do not fire either — which is why this is
+  narrowed to links we are actually taking over, with everything else returning
+  before the event is touched.
   */
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('a[href^="#"]')
-    if (!link || link.hasAttribute('data-lenis-prevent')) return
+  document.addEventListener(
+    'click',
+    (event) => {
+      const link = event.target.closest('a[href^="#"]')
+      if (!link || link.hasAttribute('data-lenis-prevent')) return
 
-    const hash = link.getAttribute('href')
-    if (!hash || hash === '#') return
+      const hash = link.getAttribute('href')
+      if (!hash || hash === '#') return
 
-    const target = document.querySelector(hash)
-    if (!target) return
+      const target = document.querySelector(hash)
+      if (!target) return
 
-    event.preventDefault()
-    lenis.scrollTo(target)
-  })
+      event.preventDefault()
+      event.stopPropagation()
+      lenis.scrollTo(target)
+    },
+    true
+  )
 
   return lenis
 }

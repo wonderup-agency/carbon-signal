@@ -63,6 +63,27 @@ links added later are covered without re-binding.
 
 `data-lenis-prevent` on a link opts it back out to native behaviour.
 
+### The listener is in the capture phase, and that is load-bearing
+
+**Webflow ships its own anchor scroller.** Its `scroll` module delegates on
+`a[href*="#"]:not(.w-tab-link):not(a[href="#"])` and drives `window.scroll()`
+from its own rAF loop. Critically, it **never checks `defaultPrevented`** — so
+`preventDefault()` in an ordinary bubble-phase listener does not stop it. Both
+animations then run at once and fight over the scroll position, which reads as
+the page snapping partway through the ease. Which one wins depends on bind
+order, so the symptom comes and goes rather than being reliably broken.
+
+A capture listener on `document` runs before any delegated bubble handler, so
+`stopPropagation()` there means Webflow's never fires.
+
+The cost is real and worth stating: other click handlers on in-page links do
+not fire either. That is why the handler is narrowed first — anything without a
+resolvable `#` target returns before the event is touched.
+
+Under reduced motion none of this runs: there is no Lenis instance, the listener
+is never registered, and Webflow's scroller handles the jump on its own (it
+honours `prefers-reduced-motion` too, and jumps instantly).
+
 ## Controlling it
 
 `getLenis()` returns the instance, or `null` under reduced motion. For anything
