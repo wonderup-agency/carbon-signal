@@ -1,0 +1,1 @@
+import{t as e,r}from"./scroll-progress-htGf9iia.js";function t(t){if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches)return e(t,{property:"--light-bleed-p",map:r})}export{t as default};

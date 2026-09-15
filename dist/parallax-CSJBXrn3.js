@@ -1,0 +1,1 @@
+import{t as r}from"./scroll-progress-htGf9iia.js";function a(a){if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches)return r(a,{property:"--parallax-p",map:r=>Math.min(1,Math.max(0,r))})}export{a as default};

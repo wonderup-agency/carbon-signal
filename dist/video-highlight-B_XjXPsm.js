@@ -1,0 +1,1 @@
+import{t as e,r}from"./scroll-progress-htGf9iia.js";function o(o){if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches)return e(o,{property:"--video-bleed-p",map:r});o.forEach(e=>{e.querySelectorAll("video").forEach(e=>{e.autoplay=!1,e.pause()})})}export{o as default};
